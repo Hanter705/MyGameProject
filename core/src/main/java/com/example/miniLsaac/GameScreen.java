@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class GameScreen implements Screen {
 
     private SpriteBatch batch;
-    private Player player;
+    private Wizard player;
     private ArrayList<Enemy> enemies;
     private OrthographicCamera camera; // камера
     private float damageCooldown = 0f;
@@ -27,7 +27,7 @@ public class GameScreen implements Screen {
         camera.setToOrtho(false, 800, 600); // размер “вида” камеры
 
         // Создаём игрока
-        player = new Player();
+        player = new Wizard();
 
         // Создаём список врагов
         enemies = new ArrayList<>();
