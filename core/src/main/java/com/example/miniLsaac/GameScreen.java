@@ -88,6 +88,30 @@ public class GameScreen implements Screen {
         for (Enemy enemy : enemies) {
             enemy.drawHP(camera); // ← добавили передачу камеры
         }
+        // === Проверка попадания файрбола во врагов ===
+        for (int i = 0; i < player.getFireballs().size(); i++) {
+            Fireball f = player.getFireballs().get(i);
+
+            for (Enemy enemy : enemies) {
+                if (!enemy.isAlive()) continue;
+
+                float dx = f.getX() - enemy.getX();
+                float dy = f.getY() - enemy.getY();
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40) { // радиус попадания
+                    enemy.takeDamage(f.getDamage());
+                    f.setActive(false); // деактивируем файрбол после удара
+                    break;
+                }
+            }
+        }
+        player.getFireballs().removeIf(f -> !f.isActive());
+        // Удаляем всех мёртвых врагов
+        enemies.removeIf(e -> !e.isAlive());
+
+
+
     }
 
 

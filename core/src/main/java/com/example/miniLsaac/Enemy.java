@@ -17,6 +17,7 @@ public class Enemy {
     private Animation<TextureRegion> flyAnim;
     private TextureRegion currentFrame;
     private float stateTime;
+    private boolean alive = true;
 
     private float x, y;
     private float speed = 60f;
@@ -108,14 +109,18 @@ public class Enemy {
     }
 
 
-    public void takeDamage(int dmg) {
-        hp -= dmg;
-        if (hp < 0) hp = 0;
+    public boolean isAlive() {
+        return alive;
     }
 
-    public boolean isDead() {
-        return hp <= 0;
+    public void takeDamage(int dmg) {
+        hp -= dmg;
+        if (hp <= 0) {
+            hp = 0;
+            alive = false;
+        }
     }
+
 
     public void dispose() {
         for (Texture t : flyTextures) t.dispose();
