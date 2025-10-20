@@ -5,8 +5,16 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import java.util.ArrayList;
+import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
+import com.badlogic.gdx.math.Rectangle;
+
+
 
 public class GameScreen implements Screen {
 
@@ -14,6 +22,12 @@ public class GameScreen implements Screen {
     private Wizard player;
     private ArrayList<Enemy> enemies;
     private OrthographicCamera camera; // камера
+
+    // === переменные для карты ===
+    private TiledMap map;
+    private OrthogonalTiledMapRenderer mapRenderer;
+    private ArrayList<Rectangle> walls;
+
     private float damageCooldown = 0f;
     private final float DAMAGE_INTERVAL = 0.5f; // полсекунды между ударами
 
@@ -25,6 +39,24 @@ public class GameScreen implements Screen {
         // === создаём камеру ===
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 600); // размер “вида” камеры
+
+        // === загружаем карту ===
+        TmxMapLoader loader = new TmxMapLoader();
+        map = loader.load("map/sin nombre.tmx");  // путь к твоей карте
+        mapRenderer = new OrthogonalTiledMapRenderer(map, 1f); // 1f — масштаб тайлов
+
+        walls = new ArrayList<>();
+
+        MapLayer collisionLayer = map.getLayers().get("collision");
+        if (collisionLayer != null) {
+            for (MapObject object : collisionLayer.getObjects()) {
+                if (object instanceof RectangleMapObject) {
+                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
+                    walls.add(rect);
+                }
+            }
+        }
+
 
         // Создаём игрока
         player = new Wizard();
@@ -45,7 +77,7 @@ public class GameScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         // === обновляем игрока и врагов ===
-        player.update(delta);
+        player.update(delta, walls);
         for (Enemy enemy : enemies) {
             enemy.update(delta, player.getX(), player.getY(), enemies);
 
@@ -71,6 +103,10 @@ public class GameScreen implements Screen {
             0.09f
         );
         camera.update();
+
+        // === рисуем карту ===
+        mapRenderer.setView(camera);
+        mapRenderer.render();
 
         // === применяем камеру к SpriteBatch ===
         batch.setProjectionMatrix(camera.combined);

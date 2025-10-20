@@ -9,44 +9,45 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.Rectangle;
 import java.util.ArrayList;
 
 
-/**
- * Класс персонажа Wizard (визард)
- * Управляет: движением, анимациями (полёт / атака), здоровьем и направлением взгляда
- */
 public class Wizard {
     // === Позиция и движение ===
-    private float x = 100, y = 100;   // координаты персонажа
-    private float speed = 150;        // скорость движения
-    private boolean facingLeft = true; // по умолчанию смотрит влево
-    private float stateTime = 0f;     // таймер для анимаций
+    private float x = 400, y = 400;
+    private float speed = 150;
+    private boolean facingLeft = true;
+    private float stateTime = 0f;
+
+    // === Скорострельность ===
+    private float fireCooldown = 0.4f;    // время между выстрелами
+    private float fireRateTimer = 0f;     // таймер между выстрелами
+    private float minFireCooldown = 0.1f; // минимальный лимит
 
     // === Анимации ===
-    private Texture[] flyTextures;       // кадры полёта
-    private Texture[] attackTextures;    // кадры атаки
-    private Animation<TextureRegion> flyAnim;     // анимация полёта
-    private Animation<TextureRegion> attackAnim;  // анимация атаки
-    private TextureRegion currentFrame;  // текущий отображаемый кадр
-    private TextureRegion idleFrame;     // кадр покоя
+    private Texture[] flyTextures;
+    private Texture[] attackTextures;
+    private Animation<TextureRegion> flyAnim;
+    private Animation<TextureRegion> attackAnim;
+    private TextureRegion currentFrame;
+    private TextureRegion idleFrame;
+    private boolean isAttacking = false;
 
-    // === ХП (здоровье) ===
+    // === ХП ===
     private int maxHP = 100;
     private int hp = maxHP;
-    private ShapeRenderer hpBar = new ShapeRenderer(); // рисует полоску здоровья
+    private ShapeRenderer hpBar = new ShapeRenderer();
 
     // === Состояния ===
-    private boolean isFlying = false;    // движется ли персонаж
-    private boolean isAttacking = false; // атакует ли персонаж
+    private boolean isFlying = false;
 
-    private ArrayList<Fireball> fireballs = new ArrayList<>(); // список активных файрболов
-    private float fireCooldown = 0f; // таймер между выстрелами
-
+    // === Файрболы ===
+    private ArrayList<Fireball> fireballs = new ArrayList<>();
 
     // === Конструктор ===
     public Wizard() {
-        // === Загружаем кадры полёта ===
+        // === Анимация полёта ===
         flyTextures = new Texture[]{
             new Texture("wizard_fly_1.png"),
             new Texture("wizard_fly_2.png"),
@@ -61,12 +62,11 @@ public class Wizard {
             flyFrames[i] = new TextureRegion(flyTextures[i]);
         }
 
-        flyAnim = new Animation<>(0.12f, flyFrames);           // скорость смены кадров
-        flyAnim.setPlayMode(Animation.PlayMode.NORMAL);        // не зацикливается
-        idleFrame = flyFrames[1];                              // поза покоя
+        flyAnim = new Animation<>(0.12f, flyFrames);
+        idleFrame = flyFrames[1];
         currentFrame = idleFrame;
 
-        // === Загружаем кадры атаки ===
+        // === Анимация атаки ===
         attackTextures = new Texture[]{
             new Texture("wizard_atac_1.png"),
             new Texture("wizard_atac_2.png"),
@@ -81,96 +81,81 @@ public class Wizard {
             attackFrames[i] = new TextureRegion(attackTextures[i]);
         }
 
-        attackAnim = new Animation<>(0.04f, attackFrames);// скорасть анимации стрелбы
+        attackAnim = new Animation<>(0.05f, attackFrames);
         attackAnim.setPlayMode(Animation.PlayMode.NORMAL);
     }
 
-    // === Главная логика персонажа ===
-    public void update(float delta) {
+    // === Главная логика ===
+    public void update(float delta, ArrayList<Rectangle> walls) {
         stateTime += delta;
         boolean moving = false;
 
-        // --- движение ---
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) { y += speed * delta; moving = true; }
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) { y -= speed * delta; moving = true; }
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) { x -= speed * delta; facingLeft = true; moving = true; }
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) { x += speed * delta; facingLeft = false; moving = true; }
+        float newX = x;
+        float newY = y;
 
-        // --- запуск анимации атаки ---
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && !isAttacking) {
-            isAttacking = true;
-            stateTime = 0f;
+// --- движение ---
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) { newY += speed * delta; moving = true; }
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) { newY -= speed * delta; moving = true; }
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) { newX -= speed * delta; facingLeft = true; moving = true; }
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) { newX += speed * delta; facingLeft = false; moving = true; }
+
+// --- применяем только если нет коллизии ---
+        if (!collides(newX, newY, walls)) {
+            x = newX;
+            y = newY;
         }
 
-        // --- если идёт анимация атаки ---
+
+        // === Стрельба ===
+        fireRateTimer -= delta;
+
+        float dirX = 0;
+        float dirY = 0;
+
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) dirY = 1;
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) dirY = -1;
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) dirX = -1;
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) dirX = 1;
+
+        // если стоит — стреляет по направлению взгляда
+        if (dirX == 0 && dirY == 0) {
+            dirX = facingLeft ? -1 : 1;
+        }
+
+        // === создаём выстрел ===
+        if (fireRateTimer <= 0f) {
+            shoot(dirX, dirY);
+            fireRateTimer = fireCooldown;
+
+            // включаем анимацию атаки только если стоим
+            if (!moving) {
+                isAttacking = true;
+                stateTime = 0;
+            }
+        }
+
+        // === Обновление анимации ===
         if (isAttacking) {
             currentFrame = attackAnim.getKeyFrame(stateTime);
-
-            // Проверяем, закончилась ли анимация
             if (attackAnim.isAnimationFinished(stateTime)) {
-                // === создаём файрбол ===
-                // === Определяем направление выстрела ===
-                // === Определяем направление выстрела ===
-                float dirX = 0;
-                float dirY = 0;
-
-                // Проверяем клавиши направления
-                boolean up = Gdx.input.isKeyPressed(Input.Keys.W);
-                boolean down = Gdx.input.isKeyPressed(Input.Keys.S);
-                boolean left = Gdx.input.isKeyPressed(Input.Keys.A);
-                boolean right = Gdx.input.isKeyPressed(Input.Keys.D);
-
-            // --- строго вверх / вниз ---
-                if (up && !left && !right) { dirX = 0; dirY = 1; }
-                else if (down && !left && !right) { dirX = 0; dirY = -1; }
-
-                // --- диагонали ---
-                else if (up && right) { dirX = 1; dirY = 1; }
-                else if (up && left) { dirX = -1; dirY = 1; }
-                else if (down && right) { dirX = 1; dirY = -1; }
-                else if (down && left) { dirX = -1; dirY = -1; }
-
-                // --- если ни одна клавиша не нажата — стреляет по направлению взгляда ---
-                else {
-                    dirX = facingLeft ? -1 : 1;
-                    dirY = 0;
-                }
-
-                // === создаём файрбол ===
-                fireballs.add(new Fireball(
-                    x + (facingLeft ? -20 : 90), // позиция появления
-                    y + 40,                      // чуть выше центра
-                    dirX, dirY                   // направление
-                ));
-
-
-
-
-                // сбрасываем состояние атаки
                 isAttacking = false;
-                stateTime = 0f;
+                stateTime = 0;
             }
-        }
-        else { // если не атакует, обычная анимация полёта
+        } else {
             if (moving) {
-                if (!isFlying) {
-                    stateTime = 0f;
-                    isFlying = true;
-                }
-                currentFrame = flyAnim.getKeyFrame(stateTime);
-                if (flyAnim.isAnimationFinished(stateTime)) {
-                    currentFrame = flyAnim.getKeyFrames()[flyAnim.getKeyFrames().length - 1];
-                }
+                // показываем последний кадр анимации полёта (замороженная поза)
+                TextureRegion[] frames = flyAnim.getKeyFrames();
+                currentFrame = frames[frames.length - 1];
             } else {
+                // стоит — idle
                 currentFrame = idleFrame;
-                isFlying = false;
             }
         }
 
-        // === обновляем файрболы ===
+        // === Обновляем файрболы ===
         for (int i = 0; i < fireballs.size(); i++) {
             Fireball f = fireballs.get(i);
-            f.update(delta); // теперь обновляется каждый кадр
+            f.update(delta);
             if (!f.isActive()) {
                 fireballs.remove(i);
                 i--;
@@ -179,20 +164,56 @@ public class Wizard {
     }
 
 
-    // === Отрисовка персонажа ===
+
+    // === Создание выстрела ===
+    private void shoot(float dirX, float dirY) {
+        float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+        if (len != 0) {
+            dirX /= len;
+            dirY /= len;
+        }
+
+        facingLeft = dirX < 0;
+
+        fireballs.add(new Fireball(
+            x + (facingLeft ? -20 : 90),
+            y + 40,
+            dirX, dirY
+        ));
+    }
+
+    // === Повышение скорости стрельбы ===
+    public void increaseFireRate(float amount) {
+        fireCooldown -= amount;
+        if (fireCooldown < minFireCooldown)
+            fireCooldown = minFireCooldown;
+    }
+
+    // === Отрисовка ===
     public void draw(SpriteBatch batch) {
-        // если смотрит влево — рисуем как есть
         if (facingLeft)
             batch.draw(currentFrame, x, y, 96, 96);
-        else // если направо — зеркалим по X
+        else
             batch.draw(currentFrame, x + 96, y, -96, 96);
-        // Теперь рисуем файрболы
+
         for (Fireball f : fireballs) {
             f.draw(batch);
         }
     }
 
-    // === Отрисовка полоски здоровья ===
+    // === стены ===
+    private boolean collides(float newX, float newY, ArrayList<Rectangle> walls) {
+        Rectangle future = new Rectangle(newX, newY, 64, 64); // примерный размер визарда
+        for (Rectangle wall : walls) {
+            if (future.overlaps(wall)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    // === Полоска здоровья ===
     public void drawHP(OrthographicCamera camera) {
         hpBar.setProjectionMatrix(camera.combined);
         hpBar.begin(ShapeRenderer.ShapeType.Filled);
@@ -202,11 +223,9 @@ public class Wizard {
         float barX = x + 18;
         float barY = y + 90;
 
-        // фон
         hpBar.setColor(Color.DARK_GRAY);
         hpBar.rect(barX, barY, barWidth, barHeight);
 
-        // заполнение
         hpBar.setColor(Color.RED);
         float hpWidth = barWidth * ((float) hp / maxHP);
         hpBar.rect(barX, barY, hpWidth, barHeight);
@@ -214,7 +233,7 @@ public class Wizard {
         hpBar.end();
     }
 
-    // === Логика урона ===
+    // === Получение урона ===
     public void takeDamage(int dmg) {
         hp -= dmg;
         if (hp < 0) hp = 0;
@@ -224,23 +243,18 @@ public class Wizard {
         return hp <= 0;
     }
 
-    // === Геттеры для координат и HP ===
+    // === Геттеры ===
     public float getX() { return x; }
     public float getY() { return y; }
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
+    public ArrayList<Fireball> getFireballs() { return fireballs; }
 
     // === Очистка ресурсов ===
     public void dispose() {
         for (Texture t : flyTextures) t.dispose();
         for (Texture t : attackTextures) t.dispose();
         hpBar.dispose();
-        for (Fireball f : fireballs) {
-            f.dispose();
-        }
+        for (Fireball f : fireballs) f.dispose();
     }
-    public ArrayList<Fireball> getFireballs() {
-        return fireballs;
-    }
-
 }
