@@ -53,7 +53,7 @@ public class Fireball {
         sprite.setPosition(x, y);
 
         // удаляем, если вылетел за экран
-        if (x < -100 || x > 2000 || y < -100 || y > 1200) {
+        if (x < -2000 || x > 2000 || y < -2000 || y > 2000) {
             active = false;
         }
     }

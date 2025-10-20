@@ -173,7 +173,9 @@ public class Wizard {
             dirY /= len;
         }
 
-        facingLeft = dirX < 0;
+        if (dirX != 0) {
+            facingLeft = dirX < 0;
+        }
 
         fireballs.add(new Fireball(
             x + (facingLeft ? -20 : 90),
