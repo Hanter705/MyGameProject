@@ -39,9 +39,6 @@ public class Wizard {
     private int hp = maxHP;
     private ShapeRenderer hpBar = new ShapeRenderer();
 
-    // === Состояния ===
-    private boolean isFlying = false;
-
     // === Файрболы ===
     private ArrayList<Fireball> fireballs = new ArrayList<>();
 
@@ -178,8 +175,8 @@ public class Wizard {
         }
 
         fireballs.add(new Fireball(
-            x + (facingLeft ? -20 : 90),
-            y + 40,
+            x + (facingLeft ? -10 : 80),
+            y + 35,
             dirX, dirY
         ));
     }

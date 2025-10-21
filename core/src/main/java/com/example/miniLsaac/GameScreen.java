@@ -13,6 +13,7 @@ import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
+import java.util.Random;
 
 
 
@@ -31,6 +32,13 @@ public class GameScreen implements Screen {
     private float damageCooldown = 0f;
     private final float DAMAGE_INTERVAL = 0.5f; // полсекунды между ударами
 
+    // === новые переменные для спавна ===
+    private float spawnTimer = 0f;       // счётчик времени до следующего спавна
+    private final float SPAWN_INTERVAL = 3f; // враги появляются каждые 3 секунды
+    private int maxEnemies = 10;         // максимум врагов на карте одновременно
+    // размеры карты
+    private int mapWidth, mapHeight, tileSize;
+
 
     @Override
     public void show() {
@@ -45,6 +53,12 @@ public class GameScreen implements Screen {
         map = loader.load("map/sin nombre.tmx");  // путь к твоей карте
         mapRenderer = new OrthogonalTiledMapRenderer(map, 1f); // 1f — масштаб тайлов
 
+        mapWidth = map.getProperties().get("width", Integer.class);
+        mapHeight = map.getProperties().get("height", Integer.class);
+        tileSize = map.getProperties().get("tilewidth", Integer.class);
+
+
+        // === стена ===
         walls = new ArrayList<>();
 
         MapLayer collisionLayer = map.getLayers().get("collision");
@@ -64,10 +78,11 @@ public class GameScreen implements Screen {
         // Создаём список врагов
         enemies = new ArrayList<>();
 
-        // Добавляем нескольких врагов в разные позиции
-        enemies.add(new Enemy(400, 200));
-        enemies.add(new Enemy(600, 400));
-        enemies.add(new Enemy(200, 500));
+
+        for (int i = 0; i < 5; i++) { // например, 5 врагов
+            enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
+        }
+
     }
 
     @Override
@@ -82,6 +97,19 @@ public class GameScreen implements Screen {
             enemy.update(delta, player.getX(), player.getY(), enemies);
 
         }
+        // === периодический спавн врагов ===
+        spawnTimer += delta; // добавляем прошедшее время к таймеру
+        if (spawnTimer >= SPAWN_INTERVAL) {
+            spawnTimer = 0f; // сбрасываем таймер
+            if (enemies.size() < maxEnemies) { // если врагов меньше лимита
+                enemies.add(spawnRandomEnemy(
+                    player.getX(), player.getY(),
+                    mapWidth, mapHeight, tileSize,
+                    250 // минимальное расстояние до игрока
+                ));
+            }
+        }
+
         // === Проверка столкновений игрока с врагами ===
         damageCooldown -= delta;
         for (Enemy enemy : enemies) {
@@ -94,8 +122,6 @@ public class GameScreen implements Screen {
                 damageCooldown = DAMAGE_INTERVAL; // перезарядка
             }
         }
-
-
 
         // === камера следует за игроком ===
         camera.position.lerp(
@@ -120,9 +146,9 @@ public class GameScreen implements Screen {
         batch.end();
 
         // === отрисовка HP-шек ===
-        player.drawHP(camera); // ← добавили передачу камеры
+        player.drawHP(camera); // ← передачу камеры
         for (Enemy enemy : enemies) {
-            enemy.drawHP(camera); // ← добавили передачу камеры
+            enemy.drawHP(camera); // ← передачу камеры
         }
         // === Проверка попадания файрбола во врагов ===
         for (int i = 0; i < player.getFireballs().size(); i++) {
@@ -146,10 +172,29 @@ public class GameScreen implements Screen {
         // Удаляем всех мёртвых врагов
         enemies.removeIf(e -> !e.isAlive());
 
-
-
     }
 
+    private Enemy spawnRandomEnemy(float playerX, float playerY, int mapWidth, int mapHeight, int tileSize, float minDistance) {
+        Random rand = new Random();
+
+        float x, y;
+        while (true) {
+            // выбираем случайную точку внутри карты
+            x = rand.nextInt(mapWidth * tileSize - 100) + 50;
+            y = rand.nextInt(mapHeight * tileSize - 100) + 50;
+
+            // считаем дистанцию до игрока
+            float dx = x - playerX;
+            float dy = y - playerY;
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+            // если точка достаточно далеко — берём её
+            if (distance > minDistance)
+                break;
+        }
+
+        return new Enemy(x, y);
+    }
 
     @Override
     public void resize(int width, int height) {}

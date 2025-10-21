@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import java.util.ArrayList;
+import com.badlogic.gdx.Gdx;
+
 
 
 
@@ -32,8 +34,8 @@ public class Enemy {
         this.y = startY;
 
         flyTextures = new Texture[]{
-            new Texture("enemy_fly_1.png"),
-            new Texture("enemy_fly_2.png")
+            new Texture(Gdx.files.internal("enemy_fly_1.png")),
+            new Texture(Gdx.files.internal("enemy_fly_2.png"))
         };
 
         TextureRegion[] frames = new TextureRegion[flyTextures.length];
@@ -82,10 +84,21 @@ public class Enemy {
         }
     }
 
+    //public void draw(SpriteBatch batch) {
+    //    batch.draw(currentFrame, x, y, 64, 64);
+    //}
+
 
     public void draw(SpriteBatch batch) {
-        batch.draw(currentFrame, x, y, 64, 64);
+        if (currentFrame == null && flyAnim != null) {
+            currentFrame = flyAnim.getKeyFrame(0);
+        }
+
+        if (currentFrame != null) {
+            batch.draw(currentFrame, x, y, 64, 64);
+        }
     }
+
 
     public void drawHP(OrthographicCamera camera) {
 
