@@ -10,7 +10,7 @@ public class Fireball {
     private float dx, dy;         // направление движения
     private float speed = 400f;   // скорость
     private boolean active = true;
-    private int damage = 20; // урон, который наносит файрбол
+    private int damage = 25; // урон, который наносит файрбол
 
     private Texture texture;
     private Sprite sprite;

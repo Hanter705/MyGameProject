@@ -27,12 +27,18 @@ public class Wizard {
 
     // === Анимации ===
     private Texture[] flyTextures;
+    private Texture[] deathTextures;
     private Texture[] attackTextures;
     private Animation<TextureRegion> flyAnim;
+    private Animation<TextureRegion> deathAnim;
     private Animation<TextureRegion> attackAnim;
     private TextureRegion currentFrame;
     private TextureRegion idleFrame;
     private boolean isAttacking = false;
+
+    private boolean isDying = false; // идёт анимация смерти
+    private boolean isDead = false;  // полностью мёртв
+    private float deathTime = 0f;    // таймер для проигрывания смерти
 
     // === ХП ===
     private int maxHP = 100;
@@ -80,6 +86,26 @@ public class Wizard {
 
         attackAnim = new Animation<>(0.05f, attackFrames);
         attackAnim.setPlayMode(Animation.PlayMode.NORMAL);
+
+        // === Анимация смерти ===
+        deathTextures = new Texture[]{
+            new Texture(Gdx.files.internal("wizard_death_1.png")),
+            new Texture(Gdx.files.internal("wizard_death_2.png")),
+            new Texture(Gdx.files.internal("wizard_death_3.png")),
+            new Texture(Gdx.files.internal("wizard_death_4.png")),
+            new Texture(Gdx.files.internal("wizard_death_5.png")),
+            new Texture(Gdx.files.internal("wizard_death_6.png")),
+            new Texture(Gdx.files.internal("wizard_death_7.png")),
+            new Texture(Gdx.files.internal("wizard_death_8.png"))
+        };
+
+        TextureRegion[] deathFrames = new TextureRegion[deathTextures.length];
+        for (int i = 0;i< deathTextures.length; i++){
+            deathFrames[i] = new TextureRegion(deathTextures[i]);
+        }
+        deathAnim = new Animation<>(0.1f, deathFrames);
+        deathAnim.setPlayMode(Animation.PlayMode.NORMAL);
+
     }
 
     // === Главная логика ===
@@ -89,6 +115,19 @@ public class Wizard {
 
         float newX = x;
         float newY = y;
+
+        if (isDying) {
+            deathTime += delta;
+            currentFrame = deathAnim.getKeyFrame(deathTime);
+
+            if (deathAnim.isAnimationFinished(deathTime)) {
+                isDead = true;
+
+            }
+
+            return; // прекращаем обновлять движение и стрельбу
+        }
+
 
 // --- движение ---
         if (Gdx.input.isKeyPressed(Input.Keys.W)) { newY += speed * delta; moving = true; }
@@ -195,10 +234,14 @@ public class Wizard {
         else
             batch.draw(currentFrame, x + 96, y, -96, 96);
 
-        for (Fireball f : fireballs) {
-            f.draw(batch);
+        // если не умер — рисуем файрболы
+        if (!isDead && !isDying) {
+            for (Fireball f : fireballs) {
+                f.draw(batch);
+            }
         }
     }
+
 
     // === стены ===
     private boolean collides(float newX, float newY, ArrayList<Rectangle> walls) {
@@ -234,9 +277,20 @@ public class Wizard {
 
     // === Получение урона ===
     public void takeDamage(int dmg) {
+        if (isDying || isDead) return; // если уже умирает, не принимаем урон
+
         hp -= dmg;
-        if (hp < 0) hp = 0;
+        if (hp <= 0) {
+            hp = 0;
+            startDeath();
+        }
     }
+    private void startDeath() {
+        isDying = true;
+        deathTime = 0f;
+        currentFrame = deathAnim.getKeyFrame(0);
+    }
+
 
     public boolean isDead() {
         return hp <= 0;
@@ -253,6 +307,7 @@ public class Wizard {
     public void dispose() {
         for (Texture t : flyTextures) t.dispose();
         for (Texture t : attackTextures) t.dispose();
+        for (Texture t : deathTextures) t.dispose();
         hpBar.dispose();
         for (Fireball f : fireballs) f.dispose();
     }

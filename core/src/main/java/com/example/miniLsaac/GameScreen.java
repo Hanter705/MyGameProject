@@ -32,12 +32,17 @@ public class GameScreen implements Screen {
     private float damageCooldown = 0f;
     private final float DAMAGE_INTERVAL = 0.5f; // полсекунды между ударами
 
-    // === новые переменные для спавна ===
-    private float spawnTimer = 0f;       // счётчик времени до следующего спавна
-    private final float SPAWN_INTERVAL = 3f; // враги появляются каждые 3 секунды
-    private int maxEnemies = 10;         // максимум врагов на карте одновременно
+
+    // === переменные для волн врагов ===
+    private float spawnTimer = 0f;          // таймер между волнами
+    private final float SPAWN_INTERVAL = 10f; // каждые 5 секунд — новая волна
+    private int waveNumber = 1;             // номер текущей волны
+    private int maxEnemies = 30;            // общий лимит врагов на карте
+
     // размеры карты
     private int mapWidth, mapHeight, tileSize;
+    private ArrayList<ExpOrb> expOrbs; // список орбов опыта
+
 
 
     @Override
@@ -77,11 +82,15 @@ public class GameScreen implements Screen {
 
         // Создаём список врагов
         enemies = new ArrayList<>();
+        expOrbs = new ArrayList<>();
+
 
 
         for (int i = 0; i < 5; i++) { // например, 5 врагов
             enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
         }
+
+
 
     }
 
@@ -98,17 +107,29 @@ public class GameScreen implements Screen {
 
         }
         // === периодический спавн врагов ===
-        spawnTimer += delta; // добавляем прошедшее время к таймеру
+        // === периодический спавн врагов волнами ===
+        spawnTimer += delta;
+
         if (spawnTimer >= SPAWN_INTERVAL) {
-            spawnTimer = 0f; // сбрасываем таймер
-            if (enemies.size() < maxEnemies) { // если врагов меньше лимита
-                enemies.add(spawnRandomEnemy(
-                    player.getX(), player.getY(),
-                    mapWidth, mapHeight, tileSize,
-                    250 // минимальное расстояние до игрока
-                ));
+            spawnTimer = 0f;
+
+            // Количество врагов зависит от номера волны
+            int enemiesToSpawn = 2 + waveNumber; // на каждой волне +1 враг
+
+            for (int i = 0; i < enemiesToSpawn; i++) {
+                if (enemies.size() < maxEnemies) {
+                    enemies.add(spawnRandomEnemy(
+                        player.getX(), player.getY(),
+                        mapWidth, mapHeight, tileSize,
+                        250
+                    ));
+                }
             }
+
+            waveNumber++; // следующая волна
+            System.out.println("🌊 Wave " + waveNumber + " Started!");
         }
+
 
         // === Проверка столкновений игрока с врагами ===
         damageCooldown -= delta;
@@ -145,6 +166,7 @@ public class GameScreen implements Screen {
         }
         batch.end();
 
+
         // === отрисовка HP-шек ===
         player.drawHP(camera); // ← передачу камеры
         for (Enemy enemy : enemies) {
@@ -161,11 +183,18 @@ public class GameScreen implements Screen {
                 float dy = f.getY() - enemy.getY();
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-                if (distance < 40) { // радиус попадания
+                if (distance < 40) {
                     enemy.takeDamage(f.getDamage());
-                    f.setActive(false); // деактивируем файрбол после удара
+                    f.setActive(false);
+
+                    if (!enemy.isAlive()) {
+                        // Создаём орб на месте врага
+                        expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), 50));
+                    }
+
                     break;
                 }
+
             }
         }
         player.getFireballs().removeIf(f -> !f.isActive());
