@@ -79,18 +79,14 @@ public class GameScreen implements Screen {
 
         // Создаём игрока
         player = new Wizard();
-
         // Создаём список врагов
         enemies = new ArrayList<>();
-        expOrbs = new ArrayList<>();
-
-
 
         for (int i = 0; i < 5; i++) { // например, 5 врагов
             enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
         }
-
-
+        // список орбов
+        expOrbs = new ArrayList<>();
 
     }
 
@@ -164,14 +160,18 @@ public class GameScreen implements Screen {
         for (Enemy enemy : enemies) {
             enemy.draw(batch);
         }
+        for (ExpOrb orb : expOrbs) {
+            orb.draw(batch);
+        }
         batch.end();
 
 
-        // === отрисовка HP-шек ===
-        player.drawHP(camera); // ← передачу камеры
+        // === HP и EXP полоски ===
+        player.drawHP(camera);
         for (Enemy enemy : enemies) {
-            enemy.drawHP(camera); // ← передачу камеры
+            enemy.drawHP(camera);
         }
+
         // === Проверка попадания файрбола во врагов ===
         for (int i = 0; i < player.getFireballs().size(); i++) {
             Fireball f = player.getFireballs().get(i);
@@ -201,6 +201,16 @@ public class GameScreen implements Screen {
         // Удаляем всех мёртвых врагов
         enemies.removeIf(e -> !e.isAlive());
 
+        // === обновление и подбор EXP-орбов ===
+        for (int i = 0; i < expOrbs.size(); i++) {
+            ExpOrb orb = expOrbs.get(i);
+            orb.update(player.getX(), player.getY());
+            if (orb.isCollected()) {
+                player.addExperience(orb.getExpValue());
+                expOrbs.remove(i);
+                i--;
+            }
+        }
     }
 
     private Enemy spawnRandomEnemy(float playerX, float playerY, int mapWidth, int mapHeight, int tileSize, float minDistance) {
@@ -244,5 +254,9 @@ public class GameScreen implements Screen {
         for (Enemy enemy : enemies) {
             enemy.dispose();
         }
+        for (ExpOrb orb : expOrbs) {
+            orb.dispose();
+        }
+
     }
 }
