@@ -227,12 +227,6 @@ public class Wizard {
         ));
     }
 
-    // === Повышение скорости стрельбы ===
-    public void increaseFireRate(float amount) {
-        fireCooldown -= amount;
-        if (fireCooldown < minFireCooldown)
-            fireCooldown = minFireCooldown;
-    }
 
     // === Отрисовка ===
     public void draw(SpriteBatch batch) {
@@ -312,15 +306,30 @@ public class Wizard {
     private void levelUp() {
         exp -= expToNext;
         level++;
-        expToNext = (int) (expToNext * 1.5f); // следующее повышение требует больше опыта
+        expToNext = (int) (expToNext * 1.5f);
 
-        // усиливаем персонажа
-        speed += 10;
-        fireCooldown -= 0.05f;
-        if (fireCooldown < 0.1f) fireCooldown = 0.1f;
-
-        System.out.println("🆙 LEVEL UP! YOUR LVL IS: " + level);
+        // приостанавливаем игру и открываем экран выбора улучшений
+        GameScreen.getInstance().pauseForLevelUp(this);
     }
+
+
+    public void increaseDamage(float percent) {
+        //— позже
+        System.out.println("Damage increased by " + (int)(percent * 100) + "%!");
+    }
+
+    public void increaseSpeed(float percent) {
+        speed += speed * percent;
+        System.out.println("Speed increased by " + (int)(percent * 100) + "%!");
+    }
+
+    public void increaseFireRate(float percent) {
+        fireCooldown -= fireCooldown * percent;
+        if (fireCooldown < 0.1f) fireCooldown = 0.1f;
+        System.out.println("Fire Rate increased by " + (int)(percent * 100) + "%!");
+    }
+
+
 
 
 
@@ -335,6 +344,10 @@ public class Wizard {
     public boolean isDead() {
         return isDead;
     }
+    public int getLevel() {
+        return level;
+    }
+
 
 
     // === Очистка ресурсов ===

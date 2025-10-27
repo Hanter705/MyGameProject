@@ -5,6 +5,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
@@ -18,6 +19,16 @@ import java.util.Random;
 
 
 public class GameScreen implements Screen {
+
+    private static GameScreen instance;
+
+    public static GameScreen getInstance() {
+        return instance;
+    }
+
+    public GameScreen() {
+        instance = this;
+    }
 
     private SpriteBatch batch;
     private Wizard player;
@@ -38,6 +49,15 @@ public class GameScreen implements Screen {
     private final float SPAWN_INTERVAL = 10f; // каждые 5 секунд — новая волна
     private int waveNumber = 1;             // номер текущей волны
     private int maxEnemies = 30;            // общий лимит врагов на карте
+    private int enemiesKilled = 0;
+
+    private ArrayList<FloatingText> floatingTexts;
+
+    private boolean paused = false;
+    private LevelUpScreen levelUpScreen;
+
+
+
 
     // размеры карты
     private int mapWidth, mapHeight, tileSize;
@@ -86,6 +106,7 @@ public class GameScreen implements Screen {
             enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
         }
         // список орбов
+        floatingTexts = new ArrayList<>();
         expOrbs = new ArrayList<>();
 
     }
@@ -96,58 +117,111 @@ public class GameScreen implements Screen {
         Gdx.gl.glClearColor(0.05f, 0.05f, 0.1f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // === обновляем игрока и врагов ===
-        player.update(delta, walls);
-        for (Enemy enemy : enemies) {
-            enemy.update(delta, player.getX(), player.getY(), enemies);
+        // === если игра на паузе — не обновляем логику ===
+        if (!paused) {
 
-        }
+            // === обновляем игрока и врагов ===
+            player.update(delta, walls);
+            for (Enemy enemy : enemies) {
+                enemy.update(delta, player.getX(), player.getY(), enemies);
+            }
 
-        if (player.isDead()) {
-            Main.switchScreen(new DeathScreen());
-            return;
-        }
+            if (player.isDead()) {
+                Main.switchScreen(new DeathScreen(player.getLevel(), waveNumber, enemiesKilled));
+                return;
+            }
 
+            // === периодический спавн врагов волнами ===
+            spawnTimer += delta;
 
-        // === периодический спавн врагов ===
-        // === периодический спавн врагов волнами ===
-        spawnTimer += delta;
+            if (spawnTimer >= SPAWN_INTERVAL) {
+                spawnTimer = 0f;
+                int enemiesToSpawn = 2 + waveNumber; // каждая волна сильнее
 
-        if (spawnTimer >= SPAWN_INTERVAL) {
-            spawnTimer = 0f;
+                for (int i = 0; i < enemiesToSpawn; i++) {
+                    if (enemies.size() < maxEnemies) {
+                        enemies.add(spawnRandomEnemy(
+                            player.getX(), player.getY(),
+                            mapWidth, mapHeight, tileSize,
+                            250
+                        ));
+                    }
+                }
 
-            // Количество врагов зависит от номера волны
-            int enemiesToSpawn = 2 + waveNumber; // на каждой волне +1 враг
+                waveNumber++;
+                System.out.println("🌊 Wave " + waveNumber + " Started!");
+            }
 
-            for (int i = 0; i < enemiesToSpawn; i++) {
-                if (enemies.size() < maxEnemies) {
-                    enemies.add(spawnRandomEnemy(
-                        player.getX(), player.getY(),
-                        mapWidth, mapHeight, tileSize,
-                        250
-                    ));
+            // === Проверка столкновений игрока с врагами ===
+            damageCooldown -= delta;
+            for (Enemy enemy : enemies) {
+                float dx = enemy.getX() - player.getX();
+                float dy = enemy.getY() - player.getY();
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 40 && damageCooldown <= 0f) {
+                    player.takeDamage(10);
+                    damageCooldown = DAMAGE_INTERVAL;
                 }
             }
 
-            waveNumber++; // следующая волна
-            System.out.println("🌊 Wave " + waveNumber + " Started!");
-        }
+            // === Проверка попадания файрбола во врагов ===
+            for (int i = 0; i < player.getFireballs().size(); i++) {
+                Fireball f = player.getFireballs().get(i);
 
+                for (Enemy enemy : enemies) {
+                    if (!enemy.isAlive()) continue;
 
-        // === Проверка столкновений игрока с врагами ===
-        damageCooldown -= delta;
-        for (Enemy enemy : enemies) {
-            float dx = enemy.getX() - player.getX();
-            float dy = enemy.getY() - player.getY();
-            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                    float dx = f.getX() - enemy.getX();
+                    float dy = f.getY() - enemy.getY();
+                    float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-            if (distance < 40 && damageCooldown <= 0f) {
-                player.takeDamage(10); // отнимаем 10 HP
-                damageCooldown = DAMAGE_INTERVAL; // перезарядка
+                    if (distance < 40) {
+                        enemy.takeDamage(f.getDamage());
+                        f.setActive(false);
+
+                        if (!enemy.isAlive()) {
+                            enemiesKilled++;
+                            expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), 50));
+                        }
+
+                        break;
+                    }
+                }
+            }
+            player.getFireballs().removeIf(f -> !f.isActive());
+            enemies.removeIf(e -> !e.isAlive());
+
+            // === обновление и подбор EXP-орбов ===
+            for (int i = 0; i < expOrbs.size(); i++) {
+                ExpOrb orb = expOrbs.get(i);
+                orb.update(player.getX(), player.getY());
+                if (orb.isCollected()) {
+                    int value = orb.getExpValue();
+                    player.addExperience(value);
+
+                    floatingTexts.add(new FloatingText(
+                        orb.getX(), orb.getY() + 30,
+                        "+" + value + " XP",
+                        com.badlogic.gdx.graphics.Color.GOLD
+                    ));
+
+                    expOrbs.remove(i);
+                    i--;
+                }
+            }
+
+            // === обновление всплывающих текстов ===
+            for (int i = 0; i < floatingTexts.size(); i++) {
+                boolean alive = floatingTexts.get(i).update(delta);
+                if (!alive) {
+                    floatingTexts.remove(i);
+                    i--;
+                }
             }
         }
 
-        // === камера следует за игроком ===
+        // === камера ===
         camera.position.lerp(
             new com.badlogic.gdx.math.Vector3(player.getX() + 48, player.getY() + 48, 0),
             0.09f
@@ -160,65 +234,47 @@ public class GameScreen implements Screen {
 
         // === применяем камеру к SpriteBatch ===
         batch.setProjectionMatrix(camera.combined);
-
-        // === отрисовка спрайтов ===
         batch.begin();
+
+        // === отрисовка всех спрайтов ===
         player.draw(batch);
-        for (Enemy enemy : enemies) {
-            enemy.draw(batch);
-        }
-        for (ExpOrb orb : expOrbs) {
-            orb.draw(batch);
-        }
+        for (Enemy enemy : enemies) enemy.draw(batch);
+        for (ExpOrb orb : expOrbs) orb.draw(batch);
+        for (FloatingText text : floatingTexts) text.draw(batch);
+
         batch.end();
 
-
-        // === HP и EXP полоски ===
+        // === отрисовка HP-шек ===
         player.drawHP(camera);
-        for (Enemy enemy : enemies) {
-            enemy.drawHP(camera);
-        }
+        for (Enemy enemy : enemies) enemy.drawHP(camera);
 
-        // === Проверка попадания файрбола во врагов ===
-        for (int i = 0; i < player.getFireballs().size(); i++) {
-            Fireball f = player.getFireballs().get(i);
+        // === если включён экран улучшений — показываем его поверх ===
+        if (paused && levelUpScreen != null) {
+            // рисуем затемнённый фон (эффект “паузы”)
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            ShapeRenderer fade = new ShapeRenderer();
+            fade.begin(ShapeRenderer.ShapeType.Filled);
+            fade.setColor(0, 0, 0, 0.5f); // чёрный с прозрачностью
+            fade.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            fade.end();
+            fade.dispose();
 
-            for (Enemy enemy : enemies) {
-                if (!enemy.isAlive()) continue;
-
-                float dx = f.getX() - enemy.getX();
-                float dy = f.getY() - enemy.getY();
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < 40) {
-                    enemy.takeDamage(f.getDamage());
-                    f.setActive(false);
-
-                    if (!enemy.isAlive()) {
-                        // Создаём орб на месте врага
-                        expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), 50));
-                    }
-
-                    break;
-                }
-
-            }
-        }
-        player.getFireballs().removeIf(f -> !f.isActive());
-        // Удаляем всех мёртвых врагов
-        enemies.removeIf(e -> !e.isAlive());
-
-        // === обновление и подбор EXP-орбов ===
-        for (int i = 0; i < expOrbs.size(); i++) {
-            ExpOrb orb = expOrbs.get(i);
-            orb.update(player.getX(), player.getY());
-            if (orb.isCollected()) {
-                player.addExperience(orb.getExpValue());
-                expOrbs.remove(i);
-                i--;
-            }
+            // показываем меню улучшений
+            levelUpScreen.render(delta);
         }
     }
+
+    public void pauseForLevelUp(Wizard player) {
+        paused = true;
+        levelUpScreen = new LevelUpScreen(player, this);
+    }
+    public void resumeAfterLevelUp() {
+        paused = false;
+        levelUpScreen = null;
+    }
+
+
+
 
     private Enemy spawnRandomEnemy(float playerX, float playerY, int mapWidth, int mapHeight, int tileSize, float minDistance) {
         Random rand = new Random();
@@ -264,6 +320,8 @@ public class GameScreen implements Screen {
         for (ExpOrb orb : expOrbs) {
             orb.dispose();
         }
-
+        for (FloatingText text : floatingTexts) {
+            text.dispose();
+        }
     }
 }
