@@ -25,6 +25,13 @@ public class Wizard {
     private float fireRateTimer = 0f;     // таймер между выстрелами
     private float minFireCooldown = 0.1f; // минимальный лимит
 
+    // === Опыт и уровень ===
+    private int level = 1;
+    private int exp = 0;
+    private int expToNext = 100;
+    private int maxExp = 9999;
+
+
     // === Анимации ===
     private Texture[] flyTextures;
     private Texture[] deathTextures;
@@ -291,10 +298,32 @@ public class Wizard {
         currentFrame = deathAnim.getKeyFrame(0);
     }
 
+    // === Добавляем опыт ===
+    public void addExperience(int amount) {
+        exp += amount;
+        System.out.println("⚡ COLECTED: " + amount + " | LVL UP: " + exp + "/" + expToNext);
 
-    public boolean isDead() {
-        return hp <= 0;
+        // Проверяем, достиг ли игрок нового уровня
+        if (exp >= expToNext) {
+            levelUp();
+        }
     }
+
+    private void levelUp() {
+        exp -= expToNext;
+        level++;
+        expToNext = (int) (expToNext * 1.5f); // следующее повышение требует больше опыта
+
+        // усиливаем персонажа
+        speed += 10;
+        fireCooldown -= 0.05f;
+        if (fireCooldown < 0.1f) fireCooldown = 0.1f;
+
+        System.out.println("🆙 LEVEL UP! YOUR LVL IS: " + level);
+    }
+
+
+
 
     // === Геттеры ===
     public float getX() { return x; }
@@ -302,6 +331,11 @@ public class Wizard {
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public ArrayList<Fireball> getFireballs() { return fireballs; }
+
+    public boolean isDead() {
+        return isDead;
+    }
+
 
     // === Очистка ресурсов ===
     public void dispose() {

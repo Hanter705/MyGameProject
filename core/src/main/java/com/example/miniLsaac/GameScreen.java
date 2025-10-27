@@ -102,6 +102,13 @@ public class GameScreen implements Screen {
             enemy.update(delta, player.getX(), player.getY(), enemies);
 
         }
+
+        if (player.isDead()) {
+            Main.switchScreen(new DeathScreen());
+            return;
+        }
+
+
         // === периодический спавн врагов ===
         // === периодический спавн врагов волнами ===
         spawnTimer += delta;
