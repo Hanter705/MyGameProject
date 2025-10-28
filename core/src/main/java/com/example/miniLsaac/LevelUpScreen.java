@@ -8,6 +8,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import java.util.ArrayList;
+
 public class LevelUpScreen implements Screen {
     private Wizard player;
     private GameScreen gameScreen;
@@ -15,11 +17,7 @@ public class LevelUpScreen implements Screen {
     private BitmapFont font;
     private int selectedOption = 0;
 
-    private final String[] options = {
-        "Increase Damage +20%",
-        "Increase Speed +10%",
-        "Increase Fire Rate +15%"
-    };
+    private final ArrayList<Upgrade> upgrades = new ArrayList<>();
 
     public LevelUpScreen(Wizard player, GameScreen gameScreen) {
         this.player = player;
@@ -27,15 +25,29 @@ public class LevelUpScreen implements Screen {
         batch = new SpriteBatch();
         font = new BitmapFont();
         font.getData().setScale(2f);
-    }
 
+        // === Добавляем улучшения ===
+        upgrades.add(new Upgrade(
+            "Increase damage +20%",
+            "Fireballs deal more damage",
+            () -> player.increaseDamage(0.2f)
+        ));
 
+        upgrades.add(new Upgrade(
+            "Increase speed +10%",
+            "The character moves faster",
+            () -> player.increaseSpeed(0.1f)
+        ));
 
-    @Override
-    public void show() {
-        batch = new SpriteBatch();
-        font = new BitmapFont();
-        font.getData().setScale(2f);
+        upgrades.add(new Upgrade(
+            "Rate of Fire +15%",
+            "Fireballs are released more frequently",
+            () -> player.increaseFireRate(0.15f)
+        ));
+
+        // 🔮 Пример будущих апгрейдов:
+        // upgrades.add(new Upgrade("Щит", "Автоматически блокирует один удар", () -> player.enableShield()));
+        // upgrades.add(new Upgrade("Вампиризм", "Восстанавливает HP при убийстве врагов", () -> player.enableVampire()));
     }
 
     @Override
@@ -51,50 +63,35 @@ public class LevelUpScreen implements Screen {
         font.setColor(Color.GOLD);
         font.draw(batch, "LEVEL UP!", centerX - 120, centerY + 150);
 
-        for (int i = 0; i < options.length; i++) {
+        // === Отрисовываем варианты ===
+        for (int i = 0; i < upgrades.size(); i++) {
+            Upgrade up = upgrades.get(i);
             if (i == selectedOption) font.setColor(Color.CYAN);
             else font.setColor(Color.WHITE);
-            font.draw(batch, options[i], centerX - 150, centerY + 80 - i * 60);
+
+            font.draw(batch, up.getName(), centerX - 220, centerY + 80 - i * 80);
+            font.setColor(Color.LIGHT_GRAY);
+            font.draw(batch, up.getDescription(), centerX - 200, centerY + 50 - i * 80);
         }
 
         batch.end();
 
         // Навигация ↑ ↓
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-            selectedOption = (selectedOption - 1 + options.length) % options.length;
+            selectedOption = (selectedOption - 1 + upgrades.size()) % upgrades.size();
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-            selectedOption = (selectedOption + 1) % options.length;
+            selectedOption = (selectedOption + 1) % upgrades.size();
         }
 
-        // Подтверждение Enter
+        // Подтверждение выбора
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            applyUpgrade(selectedOption);
-            gameScreen.resumeAfterLevelUp();
-            // возвращаемся в игру
+            upgrades.get(selectedOption).apply(); // выполняем действие
+            gameScreen.resumeAfterLevelUp(); // возвращаемся в игру
         }
     }
 
-    private void applyUpgrade(int option) {
-        switch (option) {
-            case 0:
-                player.increaseDamage(0.2f);
-                break;
-            case 1:
-                player.increaseSpeed(0.1f);
-                break;
-            case 2:
-                player.increaseFireRate(0.15f);
-                break;
-        }
-
-        // Возвращаем игрока на тот же экран
-        gameScreen.resumeAfterLevelUp();
-
-    }
-
-
-
+    @Override public void show() {}
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
@@ -104,4 +101,3 @@ public class LevelUpScreen implements Screen {
         font.dispose();
     }
 }
-

@@ -10,16 +10,17 @@ public class Fireball {
     private float dx, dy;         // направление движения
     private float speed = 400f;   // скорость
     private boolean active = true;
-    private int damage = 25; // урон, который наносит файрбол
+    private int damage = 50; // урон, который наносит файрбол
 
     private Texture texture;
     private Sprite sprite;
 
-    public Fireball(float startX, float startY, float dirX, float dirY) {
+    public Fireball(float startX, float startY, float dirX, float dirY, int damage) {
         this.x = startX;
         this.y = startY;
         this.dx = dirX;
         this.dy = dirY;
+        this.damage = damage;
 
         // нормализуем направление
         float len = (float) Math.sqrt(dx * dx + dy * dy);
@@ -43,6 +44,11 @@ public class Fireball {
         // корректируем угол (если исходный спрайт смотрит вправо)
         sprite.setRotation(angle - 180);
     }
+    public Fireball(float startX, float startY, float dirX, float dirY) {
+        this(startX, startY, dirX, dirY, 50); // вызывает новый конструктор с дефолтным уроном
+    }
+
+
 
 
 

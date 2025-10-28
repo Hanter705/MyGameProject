@@ -25,6 +25,10 @@ public class Wizard {
     private float fireRateTimer = 0f;     // таймер между выстрелами
     private float minFireCooldown = 0.1f; // минимальный лимит
 
+    // === УРОН ===
+    private int baseDamage = 10;     // базовый урон одного фаербола
+    private float damageMultiplier = 1f; // множитель урона (увеличиваем апгрейдами)
+
     // === Опыт и уровень ===
     private int level = 1;
     private int exp = 0;
@@ -211,6 +215,7 @@ public class Wizard {
     // === Создание выстрела ===
     private void shoot(float dirX, float dirY) {
         float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+        int dmg = Math.round(baseDamage * damageMultiplier);
         if (len != 0) {
             dirX /= len;
             dirY /= len;
@@ -223,7 +228,8 @@ public class Wizard {
         fireballs.add(new Fireball(
             x + (facingLeft ? -10 : 80),
             y + 35,
-            dirX, dirY
+            dirX, dirY,
+            dmg
         ));
     }
 
@@ -314,8 +320,8 @@ public class Wizard {
 
 
     public void increaseDamage(float percent) {
-        //— позже
-        System.out.println("Damage increased by " + (int)(percent * 100) + "%!");
+        damageMultiplier += percent;
+        System.out.println("Damage increased by " + (int) (percent * 100) + "%!  (x" + damageMultiplier + ")");
     }
 
     public void increaseSpeed(float percent) {
