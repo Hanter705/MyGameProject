@@ -26,7 +26,7 @@ public class Wizard {
     private float minFireCooldown = 0.1f; // минимальный лимит
 
     // === УРОН ===
-    private int baseDamage = 10;     // базовый урон одного фаербола
+    private int baseDamage = 20;     // базовый урон одного фаербола
     private float damageMultiplier = 1f; // множитель урона (увеличиваем апгрейдами)
 
     // === Опыт и уровень ===
@@ -326,13 +326,13 @@ public class Wizard {
 
     public void increaseSpeed(float percent) {
         speed += speed * percent;
-        System.out.println("Speed increased by " + (int)(percent * 100) + "%!");
+        System.out.println("Speed increased by " + (int)(percent * 100) + "%!  (" + speed + ")");
     }
 
     public void increaseFireRate(float percent) {
         fireCooldown -= fireCooldown * percent;
         if (fireCooldown < 0.1f) fireCooldown = 0.1f;
-        System.out.println("Fire Rate increased by " + (int)(percent * 100) + "%!");
+        System.out.println("Fire Rate increased by " + (int)(percent * 100) + "%! (" + fireCooldown + "s)");
     }
 
 

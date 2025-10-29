@@ -51,6 +51,10 @@ public class GameScreen implements Screen {
     private int maxEnemies = 30;            // общий лимит врагов на карте
     private int enemiesKilled = 0;
 
+    private float expMultiplier = 1.0f;   // множитель опыта
+    private final float EXP_GROWTH_PER_WAVE = 0.25f; // +% за каждую волну
+
+
     private ArrayList<FloatingText> floatingTexts;
 
     private boolean paused = false;
@@ -150,6 +154,10 @@ public class GameScreen implements Screen {
 
                 waveNumber++;
                 System.out.println("🌊 Wave " + waveNumber + " Started!");
+                // Увеличиваем опыт, выпадающий за врагов
+                expMultiplier += EXP_GROWTH_PER_WAVE;
+                System.out.println("💫 Exp enemy! x" + expMultiplier);
+
             }
 
             // === Проверка столкновений игрока с врагами ===
@@ -182,8 +190,15 @@ public class GameScreen implements Screen {
 
                         if (!enemy.isAlive()) {
                             enemiesKilled++;
-                            expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), 50));
+                            // базовый опыт за врага
+                            int baseExp = 50;
+                            // умножаем на множитель волны
+                            int expValue = Math.round(baseExp * expMultiplier);
+                            // создаём орб с усиленным опытом
+                            expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), expValue));
+
                         }
+
 
                         break;
                     }
