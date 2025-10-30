@@ -15,6 +15,12 @@ import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import java.util.Random;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.Vector3;
+
 
 
 
@@ -59,6 +65,9 @@ public class GameScreen implements Screen {
 
     private boolean paused = false;
     private LevelUpScreen levelUpScreen;
+    private ShapeRenderer uiShape;   //  UI (полоски, фоны)
+    private BitmapFont uiFont;       // текст поверх UI
+
 
 
 
@@ -112,6 +121,11 @@ public class GameScreen implements Screen {
         // список орбов
         floatingTexts = new ArrayList<>();
         expOrbs = new ArrayList<>();
+
+        uiShape = new ShapeRenderer();
+        uiFont = new BitmapFont();
+        uiFont.getData().setScale(1.5f);
+
 
     }
 
@@ -277,6 +291,50 @@ public class GameScreen implements Screen {
             // показываем меню улучшений
             levelUpScreen.render(delta);
         }
+        // === === === EXP UI BAR === === ===
+        int level = player.getLevel();
+        int curExp = player.getExp();
+        int nextExp = player.getExpToNext();
+
+        // Защита от деления на 0
+        float progress = nextExp > 0 ? (float)curExp / nextExp : 0f;
+        if (progress > 1f) progress = 1f;
+
+        // Размер и позиция полоски
+        float barWidth = Gdx.graphics.getWidth() * 0.6f;
+        float barHeight = 20f;
+        float barX = (Gdx.graphics.getWidth() - barWidth) / 2f;
+        float barY = 20f;
+
+        // Камера для UI (фиксированная, чтобы HUD не двигался с игроком)
+        OrthographicCamera uiCamera = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        uiCamera.setToOrtho(false);
+        uiShape.setProjectionMatrix(uiCamera.combined);
+
+        // --- Рисуем саму полосу ---
+        uiShape.begin(ShapeRenderer.ShapeType.Filled);
+
+        // фон (тёмный)
+        uiShape.setColor(Color.DARK_GRAY);
+        uiShape.rect(barX, barY, barWidth, barHeight);
+
+        // заполнение (золотое)
+        uiShape.setColor(new Color(1f, 0.9f - progress * 0.5f, 0.2f, 1f));
+
+        uiShape.rect(barX, barY, barWidth * progress, barHeight);
+
+        uiShape.end();
+
+        // --- Текст уровня и значения XP ---
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+
+        uiFont.setColor(Color.WHITE);
+        uiFont.draw(batch, "LVL " + level, barX, barY + barHeight + 25);
+        uiFont.draw(batch, curExp + " / " + nextExp + " XP", barX + barWidth - 180, barY + barHeight + 25);
+
+        batch.end();
+
     }
 
     public void pauseForLevelUp(Wizard player) {
@@ -338,5 +396,8 @@ public class GameScreen implements Screen {
         for (FloatingText text : floatingTexts) {
             text.dispose();
         }
+        uiShape.dispose();
+        uiFont.dispose();
+
     }
 }

@@ -346,7 +346,12 @@ public class Wizard {
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public ArrayList<Fireball> getFireballs() { return fireballs; }
-
+    public int getExp() {
+        return exp;
+    }
+    public int getExpToNext() {
+        return expToNext;
+    }
     public boolean isDead() {
         return isDead;
     }

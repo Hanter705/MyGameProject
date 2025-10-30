@@ -7,12 +7,15 @@ public class Main extends Game {
 
     public static Main instance;
     public SpriteBatch batch;
+    public static String playerName = "Unknown";
+
 
     @Override
     public void create() {
         instance = this;
         batch = new SpriteBatch();
-        setScreen(new GameScreen()); // стартовый экран
+        setScreen(new StartScreen());
+
     }
 
     @Override
