@@ -59,6 +59,8 @@ public class Wizard {
     // === Файрболы ===
     private ArrayList<Fireball> fireballs = new ArrayList<>();
 
+
+
     // === Конструктор ===
     public Wizard() {
         // === Анимация полёта ===
@@ -358,6 +360,16 @@ public class Wizard {
     public int getLevel() {
         return level;
     }
+    public float getDamageMultiplier() {
+        return damageMultiplier;
+    }
+
+    public float getSpeed() {
+        return speed;
+    }
+
+
+
 
 
 

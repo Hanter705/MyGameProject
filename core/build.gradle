@@ -7,4 +7,7 @@ dependencies {
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+  implementation files('libs/mysql-connector-j-9.0.0.jar')
 }
+
+

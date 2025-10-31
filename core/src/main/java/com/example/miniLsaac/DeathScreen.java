@@ -1,11 +1,13 @@
 package com.example.miniLsaac;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 public class DeathScreen implements Screen {
 
@@ -15,6 +17,7 @@ public class DeathScreen implements Screen {
     private int level;
     private int wave;
     private int enemiesKilled;
+    private boolean saved = false; // 🔹 чтобы не сохранял дважды
 
     public DeathScreen(int level, int wave, int enemiesKilled) {
         this.level = level;
@@ -23,7 +26,6 @@ public class DeathScreen implements Screen {
 
         batch = new SpriteBatch();
         font = new BitmapFont();
-        font.setColor(Color.RED);
         font.getData().setScale(2f);
     }
 
@@ -34,25 +36,27 @@ public class DeathScreen implements Screen {
 
         batch.begin();
 
-        // Получаем ширину и высоту окна
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
+        GlyphLayout layout = new GlyphLayout();
 
-        // Главный текст
-        String title = " YOU DIED ";
+        String title = "YOU DIED";
+        String nameText = "PLAYER: " + Main.playerName;
         String levelText = "LEVEL: " + level;
         String waveText = "WAVE: " + wave;
         String killsText = "ENEMIES KILLED: " + enemiesKilled;
+
+        String saveText = saved ? "SAVED SUCCESSFULLY!" : "Press [S] to Save Progress";
         String restartText = "Press [R] to Restart";
 
-        // Измеряем ширину каждого текста
-        float titleWidth = font.getRegion().getRegionWidth();
-        // Лучше: создаём Layout для точной ширины текста
-        com.badlogic.gdx.graphics.g2d.GlyphLayout layout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
-
-        // Рисуем всё по центру
+        // центрирование текста
+        font.setColor(Color.RED);
         layout.setText(font, title);
-        font.draw(batch, title, (screenWidth - layout.width) / 2, screenHeight / 2 + 120);
+        font.draw(batch, title, (screenWidth - layout.width) / 2, screenHeight / 2 + 140);
+
+        font.setColor(Color.GOLD);
+        layout.setText(font, nameText);
+        font.draw(batch, nameText, (screenWidth - layout.width) / 2, screenHeight / 2 + 100);
 
         layout.setText(font, levelText);
         font.draw(batch, levelText, (screenWidth - layout.width) / 2, screenHeight / 2 + 60);
@@ -63,24 +67,35 @@ public class DeathScreen implements Screen {
         layout.setText(font, killsText);
         font.draw(batch, killsText, (screenWidth - layout.width) / 2, screenHeight / 2 - 20);
 
+        // Текст "сохранить"
+        font.setColor(saved ? Color.GREEN : Color.CYAN);
+        layout.setText(font, saveText);
+        font.draw(batch, saveText, (screenWidth - layout.width) / 2, screenHeight / 2 - 80);
+
+        font.setColor(Color.WHITE);
         layout.setText(font, restartText);
-        font.draw(batch, restartText, (screenWidth - layout.width) / 2, screenHeight / 2 - 100);
+        font.draw(batch, restartText, (screenWidth - layout.width) / 2, screenHeight / 2 - 130);
 
         batch.end();
 
-        // Перезапуск
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.R)) {
+        // === Нажатие клавиш ===
+        if (!saved && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+            DatabaseManager.savePlayerData(Main.playerName, level, wave, enemiesKilled);
+            saved = true;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             Main.switchScreen(new GameScreen());
         }
     }
-
 
     @Override public void show() {}
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         batch.dispose();
         font.dispose();
     }
