@@ -9,16 +9,44 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
+/**
+ * Pantalla que aparece cuando el jugador muere.
+ * <p>
+ * Muestra la información final de la partida (nombre, nivel, oleada, enemigos eliminados)
+ * y ofrece dos opciones:
+ * <ul>
+ *   <li>Guardar el progreso en la base de datos (tecla <b>S</b>).</li>
+ *   <li>Reiniciar la partida (tecla <b>R</b>).</li>
+ * </ul>
+ * </p>
+ */
 public class DeathScreen implements Screen {
 
+    /** Objeto que permite dibujar todos los textos en pantalla. */
     private SpriteBatch batch;
+
+    /** Fuente usada para mostrar el texto. */
     private BitmapFont font;
 
+    /** Nivel alcanzado por el jugador. */
     private int level;
-    private int wave;
-    private int enemiesKilled;
-    private boolean saved = false; // 🔹 чтобы не сохранял дважды
 
+    /** Número de oleada alcanzado. */
+    private int wave;
+
+    /** Cantidad total de enemigos eliminados. */
+    private int enemiesKilled;
+
+    /** Indica si el progreso ya fue guardado (para evitar duplicación). */
+    private boolean saved = false;
+
+    /**
+     * Constructor que inicializa la pantalla de muerte.
+     *
+     * @param level nivel alcanzado por el jugador
+     * @param wave oleada alcanzada antes de morir
+     * @param enemiesKilled número de enemigos eliminados
+     */
     public DeathScreen(int level, int wave, int enemiesKilled) {
         this.level = level;
         this.wave = wave;
@@ -29,31 +57,48 @@ public class DeathScreen implements Screen {
         font.getData().setScale(2f);
     }
 
+    /**
+     * Dibuja y actualiza el contenido de la pantalla en cada frame.
+     * <p>
+     * - Muestra la información final del jugador.<br>
+     * - Permite guardar los datos presionando <b>S</b>.<br>
+     * - Reinicia el juego con <b>R</b>.
+     * </p>
+     *
+     * @param delta tiempo transcurrido desde el último frame.
+     */
     @Override
     public void render(float delta) {
+        // Limpieza del fondo (color negro)
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.begin();
 
+        // Obtenemos el tamaño de la pantalla para centrar el texto
         float screenWidth = Gdx.graphics.getWidth();
         float screenHeight = Gdx.graphics.getHeight();
         GlyphLayout layout = new GlyphLayout();
 
+        // Información que se muestra al morir
         String title = "YOU DIED";
         String nameText = "PLAYER: " + Main.playerName;
         String levelText = "LEVEL: " + level;
         String waveText = "WAVE: " + wave;
         String killsText = "ENEMIES KILLED: " + enemiesKilled;
 
+        // Mensaje de guardado
         String saveText = saved ? "SAVED SUCCESSFULLY!" : "Press [S] to Save Progress";
         String restartText = "Press [R] to Restart";
 
-        // центрирование текста
+        // === Dibujo de cada texto centrado ===
+
+        // Título principal
         font.setColor(Color.RED);
         layout.setText(font, title);
         font.draw(batch, title, (screenWidth - layout.width) / 2, screenHeight / 2 + 140);
 
+        //  Nombre del jugador y estadísticas
         font.setColor(Color.GOLD);
         layout.setText(font, nameText);
         font.draw(batch, nameText, (screenWidth - layout.width) / 2, screenHeight / 2 + 100);
@@ -67,23 +112,27 @@ public class DeathScreen implements Screen {
         layout.setText(font, killsText);
         font.draw(batch, killsText, (screenWidth - layout.width) / 2, screenHeight / 2 - 20);
 
-        // Текст "сохранить"
+        // 🟢 Mensaje de guardado (cambia de color cuando se guarda)
         font.setColor(saved ? Color.GREEN : Color.CYAN);
         layout.setText(font, saveText);
         font.draw(batch, saveText, (screenWidth - layout.width) / 2, screenHeight / 2 - 80);
 
+        // ⚪ Texto para reiniciar el juego
         font.setColor(Color.WHITE);
         layout.setText(font, restartText);
         font.draw(batch, restartText, (screenWidth - layout.width) / 2, screenHeight / 2 - 130);
 
         batch.end();
 
-        // === Нажатие клавиш ===
+        // === CONTROL DE TECLAS ===
+
+        //Guardar progreso (solo una vez)
         if (!saved && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
             DatabaseManager.savePlayerData(Main.playerName, level, wave, enemiesKilled);
             saved = true;
         }
 
+        // Reiniciar el juego
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             Main.switchScreen(new GameScreen());
         }
@@ -94,6 +143,11 @@ public class DeathScreen implements Screen {
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
+
+    /**
+     * Libera los recursos utilizados por esta pantalla
+     * (fuente y batch de dibujo).
+     */
     @Override
     public void dispose() {
         batch.dispose();

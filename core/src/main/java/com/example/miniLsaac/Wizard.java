@@ -12,31 +12,80 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Rectangle;
 import java.util.ArrayList;
 
-
+/**
+ * Clase principal que representa al jugador (el mago).
+ * <p>
+ * Controla el movimiento, disparos, animaciones, experiencia, mejoras,
+ * daño, salud y muerte del personaje.
+ * </p>
+ *
+ * <h3>Funciones principales:</h3>
+ * <ul>
+ *     <li>Movimiento controlado por teclado (WASD).</li>
+ *     <li>Disparo automático en la dirección actual.</li>
+ *     <li>Animaciones de vuelo, ataque y muerte.</li>
+ *     <li>Sistema de experiencia, niveles y mejoras.</li>
+ *     <li>Gestión de colisiones con muros.</li>
+ * </ul>
+ */
 public class Wizard {
-    // === Позиция и движение ===
-    private float x = 400, y = 400;
+
+    // === Posición y movimiento ===
+
+    /** Posición X del mago. */
+    private float x = 400;
+
+    /** Posición Y del mago. */
+    private float y = 400;
+
+    /** Velocidad base de movimiento. */
     private float speed = 150;
+
+    /** Indica si el mago mira hacia la izquierda. */
     private boolean facingLeft = true;
+
+    /** Tiempo acumulado para actualizar animaciones. */
     private float stateTime = 0f;
 
-    // === Скорострельность ===
-    private float fireCooldown = 0.4f;    // время между выстрелами
-    private float fireRateTimer = 0f;     // таймер между выстрелами
-    private float minFireCooldown = 0.1f; // минимальный лимит
 
-    // === УРОН ===
-    private int baseDamage = 20;     // базовый урон одного фаербола
-    private float damageMultiplier = 1f; // множитель урона (увеличиваем апгрейдами)
+    // === Disparo ===
 
-    // === Опыт и уровень ===
+    /** Tiempo entre disparos (en segundos). */
+    private float fireCooldown = 0.4f;
+
+    /** Temporizador interno para controlar la cadencia de disparo. */
+    private float fireRateTimer = 0f;
+
+    /** Límite mínimo del tiempo entre disparos. */
+    private float minFireCooldown = 0.1f;
+
+
+    // === Daño ===
+
+    /** Daño base de cada bola de fuego. */
+    private int baseDamage = 20;
+
+    /** Multiplicador del daño (aumenta con las mejoras). */
+    private float damageMultiplier = 1f;
+
+
+    // === Experiencia y nivel ===
+
+    /** Nivel actual del jugador. */
     private int level = 1;
+
+    /** Experiencia actual. */
     private int exp = 0;
+
+    /** Experiencia necesaria para el siguiente nivel. */
     private int expToNext = 100;
+
+    /** Límite máximo de experiencia. */
     private int maxExp = 9999;
 
 
-    // === Анимации ===
+    // === Animaciones ===
+
     private Texture[] flyTextures;
     private Texture[] deathTextures;
     private Texture[] attackTextures;
@@ -45,25 +94,44 @@ public class Wizard {
     private Animation<TextureRegion> attackAnim;
     private TextureRegion currentFrame;
     private TextureRegion idleFrame;
+
+    /** Indica si el jugador está atacando. */
     private boolean isAttacking = false;
 
-    private boolean isDying = false; // идёт анимация смерти
-    private boolean isDead = false;  // полностью мёртв
-    private float deathTime = 0f;    // таймер для проигрывания смерти
+    /** Indica si se está reproduciendo la animación de muerte. */
+    private boolean isDying = false;
 
-    // === ХП ===
+    /** Indica si el jugador está completamente muerto. */
+    private boolean isDead = false;
+
+    /** Tiempo transcurrido en la animación de muerte. */
+    private float deathTime = 0f;
+
+
+    // === Salud (HP) ===
+
+    /** Salud máxima del jugador. */
     private int maxHP = 100;
+
+    /** Salud actual. */
     private int hp = maxHP;
+
+    /** Renderizador usado para dibujar la barra de salud. */
     private ShapeRenderer hpBar = new ShapeRenderer();
 
-    // === Файрболы ===
+
+    // === Proyectiles ===
+
+    /** Lista de todas las bolas de fuego activas. */
     private ArrayList<Fireball> fireballs = new ArrayList<>();
 
 
-
-    // === Конструктор ===
+    /**
+     * Constructor del jugador.
+     * Inicializa las animaciones (vuelo, ataque y muerte) y define los valores iniciales.
+     */
     public Wizard() {
-        // === Анимация полёта ===
+        // Animación de vuelo
         flyTextures = new Texture[]{
             new Texture("wizard_fly_1.png"),
             new Texture("wizard_fly_2.png"),
@@ -82,7 +150,7 @@ public class Wizard {
         idleFrame = flyFrames[1];
         currentFrame = idleFrame;
 
-        // === Анимация атаки ===
+        // Animación de ataque
         attackTextures = new Texture[]{
             new Texture("wizard_atac_1.png"),
             new Texture("wizard_atac_2.png"),
@@ -100,7 +168,7 @@ public class Wizard {
         attackAnim = new Animation<>(0.05f, attackFrames);
         attackAnim.setPlayMode(Animation.PlayMode.NORMAL);
 
-        // === Анимация смерти ===
+        // Animación de muerte
         deathTextures = new Texture[]{
             new Texture(Gdx.files.internal("wizard_death_1.png")),
             new Texture(Gdx.files.internal("wizard_death_2.png")),
@@ -113,77 +181,66 @@ public class Wizard {
         };
 
         TextureRegion[] deathFrames = new TextureRegion[deathTextures.length];
-        for (int i = 0;i< deathTextures.length; i++){
+        for (int i = 0; i < deathTextures.length; i++) {
             deathFrames[i] = new TextureRegion(deathTextures[i]);
         }
+
         deathAnim = new Animation<>(0.1f, deathFrames);
         deathAnim.setPlayMode(Animation.PlayMode.NORMAL);
-
     }
 
-    // === Главная логика ===
+    /**
+     * Actualiza el estado del jugador (movimiento, animaciones, disparo y colisiones).
+     *
+     * @param delta tiempo transcurrido desde el último frame.
+     * @param walls lista de rectángulos que representan las paredes del mapa.
+     */
     public void update(float delta, ArrayList<Rectangle> walls) {
         stateTime += delta;
         boolean moving = false;
+        float newX = x, newY = y;
 
-        float newX = x;
-        float newY = y;
-
+        // Si el jugador está muriendo, solo actualiza la animación
         if (isDying) {
             deathTime += delta;
             currentFrame = deathAnim.getKeyFrame(deathTime);
-
             if (deathAnim.isAnimationFinished(deathTime)) {
                 isDead = true;
-
             }
-
-            return; // прекращаем обновлять движение и стрельбу
+            return;
         }
 
-
-// --- движение ---
+        // Movimiento básico (WASD)
         if (Gdx.input.isKeyPressed(Input.Keys.W)) { newY += speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) { newY -= speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) { newX -= speed * delta; facingLeft = true; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) { newX += speed * delta; facingLeft = false; moving = true; }
 
-// --- применяем только если нет коллизии ---
+        // Verifica colisiones antes de aplicar el movimiento
         if (!collides(newX, newY, walls)) {
             x = newX;
             y = newY;
         }
 
-
-        // === Стрельба ===
+        // Control de disparos
         fireRateTimer -= delta;
-
-        float dirX = 0;
-        float dirY = 0;
-
+        float dirX = 0, dirY = 0;
         if (Gdx.input.isKeyPressed(Input.Keys.W)) dirY = 1;
         if (Gdx.input.isKeyPressed(Input.Keys.S)) dirY = -1;
         if (Gdx.input.isKeyPressed(Input.Keys.A)) dirX = -1;
         if (Gdx.input.isKeyPressed(Input.Keys.D)) dirX = 1;
+        if (dirX == 0 && dirY == 0) dirX = facingLeft ? -1 : 1;
 
-        // если стоит — стреляет по направлению взгляда
-        if (dirX == 0 && dirY == 0) {
-            dirX = facingLeft ? -1 : 1;
-        }
-
-        // === создаём выстрел ===
         if (fireRateTimer <= 0f) {
             shoot(dirX, dirY);
             fireRateTimer = fireCooldown;
-
-            // включаем анимацию атаки только если стоим
             if (!moving) {
                 isAttacking = true;
                 stateTime = 0;
             }
         }
 
-        // === Обновление анимации ===
+        // Actualiza animaciones
         if (isAttacking) {
             currentFrame = attackAnim.getKeyFrame(stateTime);
             if (attackAnim.isAnimationFinished(stateTime)) {
@@ -191,17 +248,10 @@ public class Wizard {
                 stateTime = 0;
             }
         } else {
-            if (moving) {
-                // показываем последний кадр анимации полёта (замороженная поза)
-                TextureRegion[] frames = flyAnim.getKeyFrames();
-                currentFrame = frames[frames.length - 1];
-            } else {
-                // стоит — idle
-                currentFrame = idleFrame;
-            }
+            currentFrame = moving ? flyAnim.getKeyFrames()[flyAnim.getKeyFrames().length - 1] : idleFrame;
         }
 
-        // === Обновляем файрболы ===
+        // Actualiza las bolas de fuego
         for (int i = 0; i < fireballs.size(); i++) {
             Fireball f = fireballs.get(i);
             f.update(delta);
@@ -212,9 +262,12 @@ public class Wizard {
         }
     }
 
-
-
-    // === Создание выстрела ===
+    /**
+     * Crea una nueva bola de fuego en la dirección indicada.
+     *
+     * @param dirX dirección horizontal.
+     * @param dirY dirección vertical.
+     */
     private void shoot(float dirX, float dirY) {
         float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
         int dmg = Math.round(baseDamage * damageMultiplier);
@@ -223,56 +276,56 @@ public class Wizard {
             dirY /= len;
         }
 
-        if (dirX != 0) {
-            facingLeft = dirX < 0;
-        }
+        if (dirX != 0) facingLeft = dirX < 0;
 
         fireballs.add(new Fireball(
             x + (facingLeft ? -10 : 80),
             y + 35,
-            dirX, dirY,
-            dmg
+            dirX, dirY, dmg
         ));
     }
 
-
-    // === Отрисовка ===
+    /**
+     * Dibuja el sprite del jugador y sus proyectiles.
+     *
+     * @param batch SpriteBatch usado para renderizar.
+     */
     public void draw(SpriteBatch batch) {
         if (facingLeft)
             batch.draw(currentFrame, x, y, 96, 96);
         else
             batch.draw(currentFrame, x + 96, y, -96, 96);
 
-        // если не умер — рисуем файрболы
-        if (!isDead && !isDying) {
-            for (Fireball f : fireballs) {
-                f.draw(batch);
-            }
-        }
+        if (!isDead && !isDying)
+            for (Fireball f : fireballs) f.draw(batch);
     }
 
-
-    // === стены ===
+    /**
+     * Comprueba si el jugador colisiona con una pared.
+     *
+     * @param newX nueva posición X.
+     * @param newY nueva posición Y.
+     * @param walls lista de muros del mapa.
+     * @return {@code true} si hay colisión, {@code false} si no.
+     */
     private boolean collides(float newX, float newY, ArrayList<Rectangle> walls) {
-        Rectangle future = new Rectangle(newX, newY, 64, 64); // примерный размер визарда
-        for (Rectangle wall : walls) {
-            if (future.overlaps(wall)) {
-                return true;
-            }
-        }
+        Rectangle future = new Rectangle(newX, newY, 64, 64);
+        for (Rectangle wall : walls)
+            if (future.overlaps(wall)) return true;
         return false;
     }
 
-
-    // === Полоска здоровья ===
+    /**
+     * Dibuja la barra de salud del jugador.
+     *
+     * @param camera cámara ortográfica usada para la proyección.
+     */
     public void drawHP(OrthographicCamera camera) {
         hpBar.setProjectionMatrix(camera.combined);
         hpBar.begin(ShapeRenderer.ShapeType.Filled);
 
-        float barWidth = 60;
-        float barHeight = 6;
-        float barX = x + 18;
-        float barY = y + 90;
+        float barWidth = 60, barHeight = 6;
+        float barX = x + 18, barY = y + 90;
 
         hpBar.setColor(Color.DARK_GRAY);
         hpBar.rect(barX, barY, barWidth, barHeight);
@@ -284,96 +337,95 @@ public class Wizard {
         hpBar.end();
     }
 
-    // === Получение урона ===
+    /**
+     * Aplica daño al jugador.
+     * Si la salud llega a 0, inicia la animación de muerte.
+     *
+     * @param dmg cantidad de daño recibido.
+     */
     public void takeDamage(int dmg) {
-        if (isDying || isDead) return; // если уже умирает, не принимаем урон
-
+        if (isDying || isDead) return;
         hp -= dmg;
         if (hp <= 0) {
             hp = 0;
             startDeath();
         }
     }
+
+    /**
+     * Inicia la animación de muerte.
+     */
     private void startDeath() {
         isDying = true;
         deathTime = 0f;
         currentFrame = deathAnim.getKeyFrame(0);
     }
 
-    // === Добавляем опыт ===
+    /**
+     * Añade experiencia al jugador y verifica si debe subir de nivel.
+     *
+     * @param amount cantidad de experiencia obtenida.
+     */
     public void addExperience(int amount) {
         exp += amount;
-        System.out.println("⚡ COLECTED: " + amount + " | LVL UP: " + exp + "/" + expToNext);
-
-        // Проверяем, достиг ли игрок нового уровня
-        if (exp >= expToNext) {
-            levelUp();
-        }
+        if (exp >= expToNext) levelUp();
     }
 
+    /**
+     * Incrementa el nivel del jugador y abre el menú de mejoras.
+     */
     private void levelUp() {
         exp -= expToNext;
         level++;
         expToNext = (int) (expToNext * 1.5f);
-
-        // приостанавливаем игру и открываем экран выбора улучшений
         GameScreen.getInstance().pauseForLevelUp(this);
     }
 
-
+    /**
+     * Incrementa el daño en un porcentaje.
+     *
+     * @param percent porcentaje de mejora (por ejemplo 0.2 = +20%).
+     */
     public void increaseDamage(float percent) {
         damageMultiplier += percent;
-        System.out.println("Damage increased by " + (int) (percent * 100) + "%!  (x" + damageMultiplier + ")");
     }
 
+    /**
+     * Incrementa la velocidad del jugador en un porcentaje.
+     *
+     * @param percent porcentaje de mejora.
+     */
     public void increaseSpeed(float percent) {
         speed += speed * percent;
-        System.out.println("Speed increased by " + (int)(percent * 100) + "%!  (" + speed + ")");
     }
 
+    /**
+     * Aumenta la cadencia de disparo (dispara más rápido).
+     *
+     * @param percent porcentaje de reducción del tiempo entre disparos.
+     */
     public void increaseFireRate(float percent) {
         fireCooldown -= fireCooldown * percent;
         if (fireCooldown < 0.1f) fireCooldown = 0.1f;
-        System.out.println("Fire Rate increased by " + (int)(percent * 100) + "%! (" + fireCooldown + "s)");
     }
 
+    // === Getters ===
 
-
-
-
-
-    // === Геттеры ===
     public float getX() { return x; }
     public float getY() { return y; }
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public ArrayList<Fireball> getFireballs() { return fireballs; }
-    public int getExp() {
-        return exp;
-    }
-    public int getExpToNext() {
-        return expToNext;
-    }
-    public boolean isDead() {
-        return isDead;
-    }
-    public int getLevel() {
-        return level;
-    }
-    public float getDamageMultiplier() {
-        return damageMultiplier;
-    }
+    public int getExp() { return exp; }
+    public int getExpToNext() { return expToNext; }
+    public boolean isDead() { return isDead; }
+    public int getLevel() { return level; }
+    public float getDamageMultiplier() { return damageMultiplier; }
+    public float getSpeed() { return speed; }
 
-    public float getSpeed() {
-        return speed;
-    }
-
-
-
-
-
-
-    // === Очистка ресурсов ===
+    /**
+     * Libera los recursos gráficos (texturas y ShapeRenderer).
+     */
     public void dispose() {
         for (Texture t : flyTextures) t.dispose();
         for (Texture t : attackTextures) t.dispose();
@@ -382,3 +434,4 @@ public class Wizard {
         for (Fireball f : fireballs) f.dispose();
     }
 }
+

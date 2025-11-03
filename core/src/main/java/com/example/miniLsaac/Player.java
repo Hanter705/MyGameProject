@@ -25,7 +25,7 @@ public class Player {
     private int maxHP = 100;
     private int hp = maxHP;
 
-    private ShapeRenderer hpBar; // для рисования полоски
+    private ShapeRenderer hpBar;
 
     public Player() {
         idleTexture = new Texture("player idle.png");
@@ -67,7 +67,7 @@ public class Player {
         else batch.draw(currentFrame, x + 96, y, -96, 96);
     }
 
-    // --- рисуем полоску здоровья ---
+
     public void drawHP(OrthographicCamera camera) {
 
         hpBar.setProjectionMatrix(camera.combined);
@@ -76,8 +76,8 @@ public class Player {
         float barWidth = 60;
         float barHeight = 6;
 
-        float barX = x + 18; // чуть смещаем от левого края
-        float barY = y + 90; // прямо над персонажем
+        float barX = x + 18;
+        float barY = y + 90;
 
         // фон
         hpBar.setColor(Color.DARK_GRAY);
@@ -92,13 +92,13 @@ public class Player {
     }
 
 
-    // --- наносим урон ---
+
     public void takeDamage(int dmg) {
         hp -= dmg;
         if (hp < 0) hp = 0;
     }
 
-    // --- проверка смерти ---
+
     public boolean isDead() {
         return hp <= 0;
     }
