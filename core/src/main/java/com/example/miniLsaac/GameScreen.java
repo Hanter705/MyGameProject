@@ -252,7 +252,7 @@ public class GameScreen implements Screen {
                     floatingTexts.add(new FloatingText(
                         orb.getX(), orb.getY() + 30,
                         "+" + value + " XP",
-                        Color.GOLD
+                        Color.GOLD,1
                     ));
                     expOrbs.remove(i);
                     i--;

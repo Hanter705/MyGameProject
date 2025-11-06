@@ -67,9 +67,9 @@ public class Fireball {
 
         // === Selecciona textura según dirección ===
         if (dx < 180) {
-            texture = new Texture("fier_ball_4_left.png"); // hacia la izquierda
+            texture = new Texture("atack/fier_ball_4_left.png"); // hacia la izquierda
         } else {
-            texture = new Texture("fier_ball_4.png");      // hacia la derecha
+            texture = new Texture("atack/fier_ball_4.png");      // hacia la derecha
         }
 
         sprite = new Sprite(texture);

@@ -42,11 +42,12 @@ public class FloatingText {
      * @param text contenido del texto que se mostrará
      * @param color color base del texto
      */
-    public FloatingText(float x, float y, String text, Color color) {
+    public FloatingText(float x, float y, String text, Color color, float lifeTime) {
         this.x = x;
         this.y = y;
         this.text = text;
         this.color = new Color(color);
+        this.lifeTime = lifeTime;
 
         // Inicializa la fuente con el color indicado
         font = new BitmapFont();
