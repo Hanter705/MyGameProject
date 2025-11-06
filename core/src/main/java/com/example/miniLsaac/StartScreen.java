@@ -36,7 +36,7 @@ public class StartScreen implements Screen {
     private StringBuilder playerName = new StringBuilder();
 
     /** Opciones disponibles en el menú principal. */
-    private final String[] options = {"Start Game", "Exit"};
+    private final String[] options = {"Start Game", "Leaderboard", "Exit"};
 
     /**
      * Se ejecuta cuando se muestra esta pantalla.
@@ -140,7 +140,10 @@ public class StartScreen implements Screen {
                 // Iniciar el juego
                 Main.switchScreen(new GameScreen());
             } else if (selected == 1) {
-                //  Salir
+                // Tabla de liders
+                Main.switchScreen(new LeaderboardScreen());
+            }else if (selected == 2) {
+                // Salida
                 Gdx.app.exit();
             }
         }

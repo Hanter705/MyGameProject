@@ -39,6 +39,8 @@ public class DeathScreen implements Screen {
 
     /** Indica si el progreso ya fue guardado (para evitar duplicación). */
     private boolean saved = false;
+    /** El tiempo de la partida. */
+    private int timePlayed;
 
     /**
      * Constructor que inicializa la pantalla de muerte.
@@ -47,10 +49,11 @@ public class DeathScreen implements Screen {
      * @param wave oleada alcanzada antes de morir
      * @param enemiesKilled número de enemigos eliminados
      */
-    public DeathScreen(int level, int wave, int enemiesKilled) {
+    public DeathScreen(int level, int wave, int enemiesKilled, int timePlayed) {
         this.level = level;
         this.wave = wave;
         this.enemiesKilled = enemiesKilled;
+        this.timePlayed = timePlayed;
 
         batch = new SpriteBatch();
         font = new BitmapFont();
@@ -86,10 +89,12 @@ public class DeathScreen implements Screen {
         String levelText = "LEVEL: " + level;
         String waveText = "WAVE: " + wave;
         String killsText = "ENEMIES KILLED: " + enemiesKilled;
+        String timeText = "TIME: " + timePlayed + "s";
 
         // Mensaje de guardado
         String saveText = saved ? "SAVED SUCCESSFULLY!" : "Press [S] to Save Progress";
         String restartText = "Press [R] to Restart";
+        String menuText = "Press [M] to Return to Menu";
 
         // === Dibujo de cada texto centrado ===
 
@@ -99,6 +104,11 @@ public class DeathScreen implements Screen {
         font.draw(batch, title, (screenWidth - layout.width) / 2, screenHeight / 2 + 140);
 
         //  Nombre del jugador y estadísticas
+        // === Dibujar todos los textos centrados ===
+        font.setColor(Color.RED);
+        layout.setText(font, title);
+        font.draw(batch, title, (screenWidth - layout.width) / 2, screenHeight / 2 + 140);
+
         font.setColor(Color.GOLD);
         layout.setText(font, nameText);
         font.draw(batch, nameText, (screenWidth - layout.width) / 2, screenHeight / 2 + 100);
@@ -112,15 +122,23 @@ public class DeathScreen implements Screen {
         layout.setText(font, killsText);
         font.draw(batch, killsText, (screenWidth - layout.width) / 2, screenHeight / 2 - 20);
 
-        // 🟢 Mensaje de guardado (cambia de color cuando se guarda)
+        layout.setText(font, timeText);
+        font.draw(batch, timeText, (screenWidth - layout.width) / 2, screenHeight / 2 - 60);
+
+        // Texto de guardado
         font.setColor(saved ? Color.GREEN : Color.CYAN);
         layout.setText(font, saveText);
-        font.draw(batch, saveText, (screenWidth - layout.width) / 2, screenHeight / 2 - 80);
+        font.draw(batch, saveText, (screenWidth - layout.width) / 2, screenHeight / 2 - 110);
 
-        // ⚪ Texto para reiniciar el juego
+        // Texto para reiniciar
         font.setColor(Color.WHITE);
         layout.setText(font, restartText);
-        font.draw(batch, restartText, (screenWidth - layout.width) / 2, screenHeight / 2 - 130);
+        font.draw(batch, restartText, (screenWidth - layout.width) / 2, screenHeight / 2 - 160);
+
+        // Texto para volver al menú
+        font.setColor(Color.LIGHT_GRAY);
+        layout.setText(font, menuText);
+        font.draw(batch, menuText, (screenWidth - layout.width) / 2, screenHeight / 2 - 210);
 
         batch.end();
 
@@ -128,13 +146,18 @@ public class DeathScreen implements Screen {
 
         //Guardar progreso (solo una vez)
         if (!saved && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-            DatabaseManager.savePlayerData(Main.playerName, level, wave, enemiesKilled);
+            DatabaseManager.savePlayerData(Main.playerName, level, wave, enemiesKilled, timePlayed);
             saved = true;
         }
 
         // Reiniciar el juego
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             Main.switchScreen(new GameScreen());
+        }
+
+        // Volver al menú principal
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            Main.switchScreen(new StartScreen());
         }
     }
 

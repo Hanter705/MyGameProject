@@ -58,6 +58,8 @@ public class GameScreen implements Screen {
     private TiledMap map;                   // mapa .tmx cargado desde Tiled
     private OrthogonalTiledMapRenderer mapRenderer; // renderizador del mapa
     private ArrayList<Rectangle> walls;     // lista de muros para detectar colisiones
+    private float playTime = 0f;            // tiempo de guego en segundos
+
 
     private float damageCooldown = 0f;      // tiempo de espera entre golpes recibidos
     private final float DAMAGE_INTERVAL = 0.5f; // intervalo mínimo entre golpes
@@ -72,6 +74,9 @@ public class GameScreen implements Screen {
     // === EXPERIENCIA ===
     private float expMultiplier = 1.0f;     // multiplicador de experiencia
     private final float EXP_GROWTH_PER_WAVE = 0.25f; // cada oleada da +25% más de exp
+
+
+
 
     private ArrayList<FloatingText> floatingTexts; // lista de textos flotantes (+50 XP)
     private boolean paused = false;         // si el juego está en pausa (por ejemplo, menú de mejora)
@@ -93,7 +98,7 @@ public class GameScreen implements Screen {
     public void show() {
         batch = new SpriteBatch();
 
-        // 📷 Configuración de la cámara (zona visible del mundo)
+        // Configuración de la cámara (zona visible del mundo)
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 600);
 
@@ -118,6 +123,12 @@ public class GameScreen implements Screen {
                 }
             }
         }
+
+        // Tiempo
+        uiFont = new BitmapFont();
+        uiFont.setColor(com.badlogic.gdx.graphics.Color.WHITE);
+        uiFont.getData().setScale(1.5f);
+
 
         // Creación del jugador y enemigos iniciales
         player = new Wizard();
@@ -148,6 +159,8 @@ public class GameScreen implements Screen {
         // Si el juego no está en pausa, actualiza toda la lógica
         if (!paused) {
 
+            playTime += delta; // teimer
+
             // Movimiento y ataques del jugador
             player.update(delta, walls);
 
@@ -158,7 +171,8 @@ public class GameScreen implements Screen {
 
             // Si el jugador muere → cambiar a la pantalla de muerte
             if (player.isDead()) {
-                Main.switchScreen(new DeathScreen(player.getLevel(), waveNumber, enemiesKilled));
+                int seconds = (int) playTime;
+                Main.switchScreen(new DeathScreen(player.getLevel(), waveNumber, enemiesKilled, seconds));
                 return;
             }
 
@@ -317,6 +331,17 @@ public class GameScreen implements Screen {
         uiFont.draw(batch, "LVL " + level, barX, barY + barHeight + 25);
         uiFont.draw(batch, curExp + " / " + nextExp + " XP", barX + barWidth - 180, barY + barHeight + 25);
         batch.end();
+
+        // === UI: Taimer con cordinatos ===
+        OrthographicCamera uiCam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        uiCam.setToOrtho(false);
+        batch.setProjectionMatrix(uiCam.combined);
+
+        batch.begin();
+        uiFont.draw(batch, " " + formatTime(playTime), 20, Gdx.graphics.getHeight() - 20);
+        batch.end();
+
+
     }
 
     /** Pausa el juego y muestra la pantalla de selección de mejoras. */
@@ -350,6 +375,17 @@ public class GameScreen implements Screen {
         }
         return new Enemy(x, y);
     }
+
+    /**
+     * El tiempo en segundos pasa a formato MM:SS
+     */
+    private String formatTime(float timeInSeconds) {
+        int totalSeconds = (int) timeInSeconds;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
 
     @Override public void resize(int width, int height) {}
     @Override public void pause() {}

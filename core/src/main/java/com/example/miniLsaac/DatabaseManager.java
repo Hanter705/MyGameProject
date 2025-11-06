@@ -81,27 +81,32 @@ public class DatabaseManager {
      * @param nickname nombre del jugador (introducido en el inicio del juego)
      * @param level nivel alcanzado por el jugador
      * @param wave número de la última oleada alcanzada
-     * @param enemiesKilled cantidad total de enemigos eliminados
+     * @param enemies_killed cantidad total de enemigos eliminados
      */
-    public static void savePlayerData(String nickname, int level, int wave, int enemiesKilled) {
-        // Asegura que la conexión esté activa
-        connect();
+    public static void savePlayerData(String nickname, int level, int wave, int enemies_killed, int timePlayed) {
+        try {
+            // asegura que el conecion ete activa
+            if (connection == null) connect();
 
-        // Sentencia SQL para insertar un nuevo registro
-        String sql = "INSERT INTO player_stats (nickname, level, wave, enemies_killed) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            // Asigna valores a los parámetros de la consulta
-            stmt.setString(1, nickname);
-            stmt.setInt(2, level);
-            stmt.setInt(3, wave);
-            stmt.setInt(4, enemiesKilled);
+            // asigna SQL para insertar un nuevo registro
+            String sql = "INSERT INTO player_stats (nickname, level, wave, enemies_killed, timePlayed) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement ps = connection.prepareStatement(sql);
+            // asigna valores a los parametros de la consulta
+            ps.setString(1, nickname);
+            ps.setInt(2, level);
+            ps.setInt(3, wave);
+            ps.setInt(4, enemies_killed);
+            ps.setInt(5, timePlayed);
+            ps.executeUpdate();
 
-            // Ejecuta la inserción en la base de datos
-            stmt.executeUpdate();
-            System.out.println("Player data saved to database!");
-        } catch (SQLException e) {
-            // Error al guardar los datos
+            System.out.println("Player data saved!");
+        } catch (Exception e) {
             System.err.println("Error saving data: " + e.getMessage());
         }
     }
+    public static Connection getConnection() {
+        return connection;
+    }
+
+
 }
