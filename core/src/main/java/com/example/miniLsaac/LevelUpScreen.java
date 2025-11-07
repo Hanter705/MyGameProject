@@ -72,9 +72,14 @@ public class LevelUpScreen implements Screen {
             () -> player.increaseFireRate(0.15f)
         ));
 
-        // Ejemplos de mejoras futuras:
-        // upgrades.add(new Upgrade("Shield", "Blocks one hit automatically", () -> player.enableShield()));
-        // upgrades.add(new Upgrade("Regeneration", "Slowly regenerates HP over time", () -> player.enableRegen()));
+        // === Mejora 4: Regeneración de salud ===
+        upgrades.add(new Upgrade(
+            "Regeneration +1 HP/sec",
+            "Slowly regenerates health over time",
+            () -> player.enableRegen(2f)
+        ));
+
+
     }
 
     /**

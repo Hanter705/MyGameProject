@@ -119,6 +119,13 @@ public class Wizard {
     /** Renderizador usado para dibujar la barra de salud. */
     private ShapeRenderer hpBar = new ShapeRenderer();
 
+    /** Para logica de generacion de HP */
+    // === regeneration ===
+    private boolean hasRegeneration = false;
+    private float regenRate = 1f;       // HP recupera en  1 cantidac por segundo
+    private float regenTimer = 0f;
+
+
 
     // === Proyectiles ===
 
@@ -258,6 +265,16 @@ public class Wizard {
             if (!f.isActive()) {
                 fireballs.remove(i);
                 i--;
+            }
+        }
+
+        // === Logica de regeneracion ===
+        if (hasRegeneration && hp < maxHP) {
+            regenTimer += delta;
+            if (regenTimer >= 1f) { // cada segundo
+                hp += regenRate;
+                if (hp > maxHP) hp = maxHP;
+                regenTimer = 0f;
             }
         }
     }
@@ -407,6 +424,15 @@ public class Wizard {
     public void increaseFireRate(float percent) {
         fireCooldown -= fireCooldown * percent;
         if (fireCooldown < 0.1f) fireCooldown = 0.1f;
+    }
+    /**
+     * Activa regeneratin de HP con cegundos indicados
+     * @param rate cantidad de HP por segundo.
+     */
+    public void enableRegen(float rate) {
+        hasRegeneration = true;
+        regenRate += rate; // siempre suma la cantidad por segundo
+
     }
 
     // === Getters ===

@@ -52,6 +52,7 @@ public class GameScreen implements Screen {
     private SpriteBatch batch;              // se encarga de dibujar todos los sprites
     private Wizard player;                  // el jugador principal
     private ArrayList<Enemy> enemies;       // lista de enemigos activos
+    private ArrayList<FireBat> fireBats;
     private OrthographicCamera camera;      // cámara que sigue al jugador
 
     // === VARIABLES DEL MAPA ===
@@ -133,6 +134,7 @@ public class GameScreen implements Screen {
         // Creación del jugador y enemigos iniciales
         player = new Wizard();
         enemies = new ArrayList<>();
+        fireBats = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
         }
@@ -181,20 +183,36 @@ public class GameScreen implements Screen {
 
             if (spawnTimer >= SPAWN_INTERVAL) {
                 spawnTimer = 0f;
-                int enemiesToSpawn = 2 + waveNumber; // cada oleada tiene más enemigos
+                int enemiesToSpawn = 2 + waveNumber; // каждая волна сильнее
 
+                // === обычные враги ===
                 for (int i = 0; i < enemiesToSpawn; i++) {
                     if (enemies.size() < maxEnemies) {
-                        enemies.add(spawnRandomEnemy(player.getX(), player.getY(),
-                            mapWidth, mapHeight, tileSize, 250));
+                        enemies.add(spawnRandomEnemy(
+                            player.getX(), player.getY(),
+                            mapWidth, mapHeight, tileSize,
+                            250
+                        ));
                     }
                 }
 
+                // === новые огненные летучие враги ===
+                if (waveNumber % 3 == 0) { // каждая третья волна
+                    for (int i = 0; i < 3; i++) {
+                        float spawnX = player.getX() + (float) Math.random() * 600 - 300;
+                        float spawnY = player.getY() + (float) Math.random() * 600 - 300;
+                        fireBats.add(new FireBat(spawnX, spawnY));
+                    }
+                    System.out.println("🔥 FireBats spawned! Wave: " + waveNumber);
+                }
+
+                // ✅ теперь закрыто правильно
                 waveNumber++;
                 System.out.println("🌊 Nueva oleada: " + waveNumber);
                 expMultiplier += EXP_GROWTH_PER_WAVE;
                 System.out.println("💫 Multiplicador de experiencia: x" + expMultiplier);
             }
+
 
             // ⚔Comprobación de colisiones entre jugador y enemigos
             damageCooldown -= delta;
@@ -282,6 +300,7 @@ public class GameScreen implements Screen {
         batch.begin();
         player.draw(batch);
         for (Enemy enemy : enemies) enemy.draw(batch);
+        for (FireBat fb : fireBats) fb.draw(batch);
         for (ExpOrb orb : expOrbs) orb.draw(batch);
         for (FloatingText text : floatingTexts) text.draw(batch);
         batch.end();
@@ -290,7 +309,7 @@ public class GameScreen implements Screen {
         player.drawHP(camera);
         for (Enemy enemy : enemies) enemy.drawHP(camera);
 
-        // Si está en pausa (menú de mejoras)
+            // Si está en pausa (menú de mejoras)
         if (paused && levelUpScreen != null) {
             Gdx.gl.glEnable(GL20.GL_BLEND);
             ShapeRenderer fade = new ShapeRenderer();
