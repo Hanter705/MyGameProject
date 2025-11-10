@@ -31,31 +31,36 @@ public class Enemy {
     private Texture[] flyTextures;
 
     /** Animación que controla los fotogramas de vuelo del enemigo. */
-    private Animation<TextureRegion> flyAnim;
+    protected  Animation<TextureRegion> flyAnim;
 
     /** Fotograma actual mostrado en pantalla. */
-    private TextureRegion currentFrame;
+    protected  TextureRegion currentFrame;
 
     /** Tiempo acumulado usado para avanzar la animación. */
-    private float stateTime;
+    protected float stateTime;
 
     /** Indica si el enemigo sigue con vida. */
-    private boolean alive = true;
+    protected boolean alive = true;
 
     /** Posición X del enemigo. */
-    private float x;
+    protected  float x;
 
     /** Posición Y del enemigo. */
-    private float y;
+    protected  float y;
 
     /** Velocidad de movimiento del enemigo. */
-    private float speed = 60f;
+    protected float speed = 60f;
 
     /** Vida máxima del enemigo. */
-    private int maxHP = 50;
+    protected int maxHP = 50;
 
     /** Vida actual del enemigo. */
-    private int hp = maxHP;
+    protected int hp = maxHP;
+
+    /** Daño y experiencia base (para heredar en subclases). */
+    protected int damage = 10;   // daño que causa al jugador
+    protected int expDrop = 50;  // experiencia que da al morir
+
 
     /** Objeto encargado de dibujar la barra de salud. */
     private ShapeRenderer hpBar;

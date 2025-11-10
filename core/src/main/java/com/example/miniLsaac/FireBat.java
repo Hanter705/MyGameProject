@@ -1,105 +1,83 @@
 package com.example.miniLsaac;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 /**
- * Враг типа FireBat — летает к игроку и наносит урон при касании.
+ * Огненный летучий враг (наследник Enemy)
+ * - Быстрее и крепче обычных.
+ * - Дает больше опыта.
+ * - Отзеркаливается при полёте влево.
  */
-public class FireBat {
-    private float x, y;
-    private float speed = 120f;
-    private int hp = 50, maxHp = 50;
-    private boolean alive = true;
+public class FireBat extends Enemy {
 
-    private Texture texture;
-    private TextureRegion[] frames;
-    private Animation<TextureRegion> animation;
-    private float stateTime = 0f;
-
-    private boolean facingLeft = false;
-    private ShapeRenderer hpBar;
+    private Texture[] flyTextures;
+    private boolean facingLeft = false; // направление взгляда
 
     public FireBat(float x, float y) {
-        this.x = x;
-        this.y = y;
+        super(x, y); // вызывает конструктор Enemy
 
-        // 🔥 загружаем 4 кадра анимации (твои PNG)
-        TextureRegion[] tmp = new TextureRegion[4];
-        tmp[0] = new TextureRegion(new Texture(Gdx.files.internal("bad/BatFire_Flying_1.png")));
-        tmp[1] = new TextureRegion(new Texture(Gdx.files.internal("bad/BatFire_Flying_2.png")));
-        tmp[2] = new TextureRegion(new Texture(Gdx.files.internal("bad/BatFire_Flying_3.png")));
-        tmp[3] = new TextureRegion(new Texture(Gdx.files.internal("bad/BatFire_Flying_4.png")));
-        this.frames = tmp;
+        // индивидуальные параметры
+        this.speed = 85f;
+        this.maxHP = 160;
+        this.hp = maxHP;
+        this.damage = 15;
+        this.expDrop = 70;
 
-        animation = new Animation<>(0.15f, frames); // скорость смены кадров
-        hpBar = new ShapeRenderer();
-    }
+        // загружаем свои текстуры
+        flyTextures = new Texture[]{
+            new Texture(Gdx.files.internal("bad/BatFire_Flying_1.png")),
+            new Texture(Gdx.files.internal("bad/BatFire_Flying_2.png")),
+            new Texture(Gdx.files.internal("bad/BatFire_Flying_3.png")),
+            new Texture(Gdx.files.internal("bad/BatFire_Flying_4.png"))
+        };
 
-    public void update(float delta, float playerX, float playerY) {
-        if (!alive) return;
-
-        stateTime += delta;
-
-        // Двигается к игроку
-        float dx = playerX - x;
-        float dy = playerY - y;
-        float dist = (float) Math.sqrt(dx * dx + dy * dy);
-
-        if (dist > 2) {
-            x += dx / dist * speed * delta;
-            y += dy / dist * speed * delta;
+        TextureRegion[] frames = new TextureRegion[flyTextures.length];
+        for (int i = 0; i < flyTextures.length; i++) {
+            frames[i] = new TextureRegion(flyTextures[i]);
         }
 
-        // направление взгляда
-        facingLeft = dx < 0;
+        // анимация
+        flyAnim = new Animation<>(0.12f, frames);
+        flyAnim.setPlayMode(Animation.PlayMode.LOOP);
     }
 
+    @Override
+    public void update(float delta, float playerX, float playerY, java.util.ArrayList<Enemy> allEnemies) {
+        super.update(delta, playerX, playerY, allEnemies);
+
+        // определяем направление (влево или вправо)
+        facingLeft = (playerX < x);
+    }
+
+    @Override
     public void draw(SpriteBatch batch) {
-        if (!alive) return;
+        if (flyAnim == null) return;
 
-        TextureRegion currentFrame = animation.getKeyFrame(stateTime, true);
-        if (facingLeft && !currentFrame.isFlipX()) currentFrame.flip(true, false);
-        if (!facingLeft && currentFrame.isFlipX()) currentFrame.flip(true, false);
+        if (currentFrame == null)
+            currentFrame = flyAnim.getKeyFrame(0);
+        else
+            currentFrame = flyAnim.getKeyFrame(stateTime, true);
 
-        batch.draw(currentFrame, x, y, 64, 64); // размер 64x64 (можешь поменять)
-    }
+        // создаем копию кадра (чтобы не менять оригинал)
+        TextureRegion frame = new TextureRegion(currentFrame);
 
-    public void drawHP(OrthographicCamera camera) {
-        if (!alive) return;
-
-        hpBar.setProjectionMatrix(camera.combined);
-        hpBar.begin(ShapeRenderer.ShapeType.Filled);
-        float width = 40, height = 5;
-        hpBar.setColor(Color.DARK_GRAY);
-        hpBar.rect(x + 12, y + 60, width, height);
-        hpBar.setColor(Color.RED);
-        hpBar.rect(x + 12, y + 60, width * ((float) hp / maxHp), height);
-        hpBar.end();
-    }
-
-    public void takeDamage(int dmg) {
-        hp -= dmg;
-        if (hp <= 0) {
-            alive = false;
+        // зеркалим, если движется влево
+        if (facingLeft && !frame.isFlipX()) {
+            frame.flip(true, false);
+        } else if (!facingLeft && frame.isFlipX()) {
+            frame.flip(true, false);
         }
+
+        batch.draw(frame, x, y, 64, 64);
     }
 
-    public boolean isAlive() {
-        return alive;
-    }
-
-    public float getX() { return x; }
-    public float getY() { return y; }
-
+    @Override
     public void dispose() {
-        for (TextureRegion region : frames) region.getTexture().dispose();
-        hpBar.dispose();
+        super.dispose();
+        for (Texture t : flyTextures) t.dispose();
     }
 }
