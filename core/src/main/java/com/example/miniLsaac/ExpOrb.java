@@ -49,10 +49,10 @@ public class ExpOrb {
 
         // 🎨 Selecciona el color del orbe según la cantidad de experiencia
         String prefix;
-        if (expValue <= 20) prefix = "coin/spr_coin_azu";        // Azul — poco EXP
-        else if (expValue <= 50) prefix = "coin/spr_coin_gri";   // Gris — medio
-        else if (expValue <= 80) prefix = "coin/spr_coin_ama";   // Amarillo — alto
-        else if (expValue <= 120) prefix = "coin/spr_coin_berd"; // Verde — raro
+        if (expValue <= 40) prefix = "coin/spr_coin_azu";        // Azul — poco EXP
+        else if (expValue <= 140) prefix = "coin/spr_coin_gri";   // Gris — medio
+        else if (expValue <= 260) prefix = "coin/spr_coin_ama";   // Amarillo — alto
+        else if (expValue <= 500) prefix = "coin/spr_coin_berd"; // Verde — raro
         else prefix = "coin/spr_coin_roj";                       // Rojo — épico
 
         // 🧩 Carga los 4 fotogramas de animación
@@ -90,14 +90,14 @@ public class ExpOrb {
         float dy = playerY - position.y;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-        // 🔄 Si el jugador está a menos de 100 px, el orbe se mueve hacia él
+        //  Si el jugador está a menos de 100 px, el orbe se mueve hacia él
         if (distance < 100f) {
             float pullSpeed = speed + (100 - distance) * 2;
             position.x += (dx / distance) * pullSpeed * Gdx.graphics.getDeltaTime();
             position.y += (dy / distance) * pullSpeed * Gdx.graphics.getDeltaTime();
         }
 
-        // 💥 Si el jugador está lo suficientemente cerca, se recoge
+        // Si el jugador está lo suficientemente cerca, se recoge
         if (distance < 30f) {
             collected = true;
         }

@@ -257,7 +257,7 @@ public class GameScreen implements Screen {
             // Actualización y recolección de orbes de experiencia
             for (int i = 0; i < expOrbs.size(); i++) {
                 ExpOrb orb = expOrbs.get(i);
-                orb.update(player.getX(), player.getY());
+                orb.update(player.getCenterX(), player.getCenterY());
                 if (orb.isCollected()) {
                     int value = orb.getExpValue();
                     player.addExperience(value);
@@ -272,6 +272,24 @@ public class GameScreen implements Screen {
                     i--;
                 }
             }
+
+            // === Recolección de Heal Potions ===
+            for (int i = 0; i < healPotions.size(); i++) {
+                HealPotion hp = healPotions.get(i);
+                hp.update(player.getCenterX(), player.getCenterY());
+
+                if (hp.isCollected()) {
+                    player.heal(hp.getHealAmount());
+                    floatingTexts.add(new FloatingText(
+                        player.getX(), player.getY() + 40,
+                        "+30 HP",
+                        Color.GREEN, 1
+                    ));
+                    healPotions.remove(i);
+                    i--;
+                }
+            }
+
 
             // ⬆Actualización de los textos flotantes (suben y se desvanecen)
             for (int i = 0; i < floatingTexts.size(); i++) {
@@ -297,6 +315,7 @@ public class GameScreen implements Screen {
         player.draw(batch);
         for (Enemy enemy : enemies) enemy.draw(batch);
         for (ExpOrb orb : expOrbs) orb.draw(batch);
+        for (HealPotion hp : healPotions) hp.draw(batch);
         for (FloatingText text : floatingTexts) text.draw(batch);
         batch.end();
 

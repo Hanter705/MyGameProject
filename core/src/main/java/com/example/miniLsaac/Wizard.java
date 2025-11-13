@@ -444,6 +444,8 @@ public class Wizard {
 
     public float getX() { return x; }
     public float getY() { return y; }
+    public float getCenterX() {return x + 48;}
+    public float getCenterY() {return y + 48;}
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public ArrayList<Fireball> getFireballs() { return fireballs; }
