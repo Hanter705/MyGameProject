@@ -90,6 +90,8 @@ public class GameScreen implements Screen {
     // === TAMAÑO DEL MAPA ===
     private int mapWidth, mapHeight, tileSize;
     private ArrayList<ExpOrb> expOrbs;      // lista de orbes de experiencia
+    private ArrayList<HealPotion> healPotions;  // lista de botles heall
+
 
     /**
      * Se ejecuta cuando se muestra por primera vez esta pantalla.
@@ -134,6 +136,7 @@ public class GameScreen implements Screen {
         // Creación del jugador y enemigos iniciales
         player = new Wizard();
         enemies = new ArrayList<>();
+        healPotions = new ArrayList<>();
 
         for (int i = 0; i < 5; i++) {
             enemies.add(spawnRandomEnemy(player.getX(), player.getY(), mapWidth, mapHeight, tileSize, 250));
@@ -211,7 +214,7 @@ public class GameScreen implements Screen {
                 float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < 40 && damageCooldown <= 0f) {
-                    player.takeDamage(10);
+                    player.takeDamage(enemy.getDamage());
                     damageCooldown = DAMAGE_INTERVAL;
                 }
             }
@@ -234,8 +237,13 @@ public class GameScreen implements Screen {
                         // Si muere, crear un orbe de experiencia
                         if (!enemy.isAlive()) {
                             enemiesKilled++;
-                            int expValue = Math.round(enemy.expDrop * expMultiplier);
+                            int expValue = Math.round(enemy.getExpDrop() * expMultiplier);
                             expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), expValue));
+
+                            if (Math.random() < 0.10) {
+                                healPotions.add(new HealPotion(enemy.getX(), enemy.getY()));
+                            }
+
                         }
                         break;
                     }
@@ -369,43 +377,28 @@ public class GameScreen implements Screen {
      */
     private Enemy spawnRandomEnemy(float playerX, float playerY,
                                    int mapWidth, int mapHeight, int tileSize, float minDistance) {
+
         Random rand = new Random();
         float x, y;
 
-        // Генерация позиции вдали от игрока
+        // Generar una posición alejada del jugador
         while (true) {
             x = rand.nextInt(mapWidth * tileSize - 100) + 50;
             y = rand.nextInt(mapHeight * tileSize - 100) + 50;
+
             float dx = x - playerX;
             float dy = y - playerY;
             float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
             if (distance > minDistance)
                 break;
         }
 
-        // === 🔥 Эволюция врагов ===
-        float minutes = playTime / 60f; // время в минутах
-
-        if (minutes < 1.5f) {
-            // 0–1.5 минуты → только обычные враги
-            return new Enemy(x, y);
-        } else if (minutes < 3f) {
-            // 1.5–3 минуты → шанс появления FireBat 20%
-            if (rand.nextFloat() < 0.2f)
-                return new FireBat(x, y);
-            else
-                return new Enemy(x, y);
-        } else if (minutes < 5f) {
-            // 3–5 минут → шанс FireBat 50%
-            if (rand.nextFloat() < 0.5f)
-                return new FireBat(x, y);
-            else
-                return new Enemy(x, y);
-        } else {
-            // После 5 минут → только FireBat (позже можно добавить других)
-            return new FireBat(x, y);
-        }
+        // La selección de enemigos se realiza a través de EnemyFactory.
+        return EnemyFactory.create(x, y, playTime);
     }
+
+
     /**
      * El tiempo en segundos pasa a formato MM:SS
      */

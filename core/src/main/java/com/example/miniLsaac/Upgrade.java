@@ -58,6 +58,6 @@ public class Upgrade {
      * </p>
      */
     public void apply() {
-        effect.run(); // 🪄 Ejecuta el efecto (por ejemplo: aumenta daño, velocidad, etc.)
+        effect.run(); // Ejecuta el efecto (por ejemplo: aumenta daño, velocidad, etc.)
     }
 }

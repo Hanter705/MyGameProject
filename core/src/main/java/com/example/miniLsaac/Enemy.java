@@ -28,10 +28,12 @@ import com.badlogic.gdx.Gdx;
 public class Enemy {
 
     /** Texturas que componen la animación de vuelo del enemigo. */
-    private Texture[] flyTextures;
+    protected Texture[] flyTextures;
 
     /** Animación que controla los fotogramas de vuelo del enemigo. */
     protected  Animation<TextureRegion> flyAnim;
+    protected boolean facingLeft = false;
+
 
     /** Fotograma actual mostrado en pantalla. */
     protected  TextureRegion currentFrame;
@@ -49,21 +51,21 @@ public class Enemy {
     protected  float y;
 
     /** Velocidad de movimiento del enemigo. */
-    protected float speed = 60f;
+    protected float speed = 55f;
 
     /** Vida máxima del enemigo. */
-    protected int maxHP = 50;
+    protected int maxHP = 120;
 
     /** Vida actual del enemigo. */
     protected int hp = maxHP;
 
     /** Daño y experiencia base (para heredar en subclases). */
-    protected int damage = 10;   // daño que causa al jugador
-    protected int expDrop = 50;  // experiencia que da al morir
+    protected int damage = 18;   // daño que causa al jugador
+    protected int expDrop = 90;  // experiencia que da al morir
 
 
     /** Objeto encargado de dibujar la barra de salud. */
-    private ShapeRenderer hpBar;
+    protected ShapeRenderer hpBar;
 
     /**
      * Crea un nuevo enemigo en una posición inicial.
@@ -135,6 +137,9 @@ public class Enemy {
                 this.y += repelY * repelForce * delta;
             }
         }
+
+        facingLeft = (playerX < x);
+
     }
 
     /**
@@ -143,14 +148,27 @@ public class Enemy {
      * @param batch el {@link SpriteBatch} usado para renderizar el sprite.
      */
     public void draw(SpriteBatch batch) {
-        if (currentFrame == null && flyAnim != null) {
+
+        if (flyAnim == null) return;
+
+        if (currentFrame == null)
             currentFrame = flyAnim.getKeyFrame(0);
+
+        currentFrame = flyAnim.getKeyFrame(stateTime, true);
+
+        // создаём копию, чтобы не портить оригинальный кадр
+        TextureRegion frame = new TextureRegion(currentFrame);
+
+        // если смотрит влево — флип по X
+        if (facingLeft && !frame.isFlipX()) {
+            frame.flip(true, false);
+        } else if (!facingLeft && frame.isFlipX()) {
+            frame.flip(true, false);
         }
 
-        if (currentFrame != null) {
-            batch.draw(currentFrame, x, y, 64, 64);
-        }
+        batch.draw(frame, x, y, 64, 64);
     }
+
 
     /**
      * Dibuja la barra de salud del enemigo sobre su sprite.
@@ -197,6 +215,14 @@ public class Enemy {
             alive = false;
         }
     }
+    protected void loadAnimation() {
+        TextureRegion[] frames = new TextureRegion[flyTextures.length];
+        for (int i = 0; i < flyTextures.length; i++) {
+            frames[i] = new TextureRegion(flyTextures[i]);
+        }
+        flyAnim = new Animation<>(0.12f, frames);
+        flyAnim.setPlayMode(Animation.PlayMode.LOOP);
+    }
 
     /**
      * Libera los recursos gráficos (texturas y ShapeRenderer).
@@ -206,6 +232,15 @@ public class Enemy {
         for (Texture t : flyTextures) t.dispose();
         hpBar.dispose();
     }
+
+    public int getExpDrop() {
+        return expDrop;
+    }
+    public int getDamage() {
+        return damage;
+    }
+
+
 
     /**
      * Devuelve la posición X del enemigo.

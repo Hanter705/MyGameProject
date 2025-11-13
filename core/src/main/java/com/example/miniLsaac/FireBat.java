@@ -14,18 +14,17 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
  */
 public class FireBat extends Enemy {
 
-    private Texture[] flyTextures;
-    private boolean facingLeft = false; // направление взгляда
+
 
     public FireBat(float x, float y) {
         super(x, y); // вызывает конструктор Enemy
 
         // индивидуальные параметры
-        this.speed = 85f;
-        this.maxHP = 160;
+        this.speed = 70f;
+        this.maxHP = 220;
         this.hp = maxHP;
-        this.damage = 15;
-        this.expDrop = 70;
+        this.damage = 35;
+        this.expDrop = 200;
 
         // загружаем свои текстуры
         flyTextures = new Texture[]{

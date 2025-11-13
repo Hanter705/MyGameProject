@@ -425,6 +425,11 @@ public class Wizard {
         fireCooldown -= fireCooldown * percent;
         if (fireCooldown < 0.1f) fireCooldown = 0.1f;
     }
+    public void heal(int amount) {
+        hp += amount;
+        if (hp > maxHP) hp = maxHP;
+    }
+
     /**
      * Activa regeneratin de HP con cegundos indicados
      * @param rate cantidad de HP por segundo.
