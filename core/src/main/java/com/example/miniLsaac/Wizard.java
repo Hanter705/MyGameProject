@@ -56,6 +56,14 @@ public class Wizard {
     /** Temporizador interno para controlar la cadencia de disparo. */
     private float fireRateTimer = 0f;
 
+    private float iceCooldown = 1.0f;
+    private float iceTimer = 0f;
+
+    private boolean fireEnabled =  false;  // включено по умолчанию
+    private boolean iceEnabled = true;  // выключено по умолчанию
+
+
+
     /** Límite mínimo del tiempo entre disparos. */
     private float minFireCooldown = 0.1f;
 
@@ -64,6 +72,7 @@ public class Wizard {
 
     /** Daño base de cada bola de fuego. */
     private int baseDamage = 20;
+    private int iceDamage = 20;
 
     /** Multiplicador del daño (aumenta con las mejoras). */
     private float damageMultiplier = 1f;
@@ -131,6 +140,8 @@ public class Wizard {
 
     /** Lista de todas las bolas de fuego activas. */
     private ArrayList<Fireball> fireballs = new ArrayList<>();
+    private ArrayList<IceBall> iceBalls = new ArrayList<>();
+
 
 
     /**
@@ -204,6 +215,7 @@ public class Wizard {
      */
     public void update(float delta, ArrayList<Rectangle> walls) {
         stateTime += delta;
+        iceTimer -= delta;
         boolean moving = false;
         float newX = x, newY = y;
 
@@ -238,13 +250,27 @@ public class Wizard {
         if (Gdx.input.isKeyPressed(Input.Keys.D)) dirX = 1;
         if (dirX == 0 && dirY == 0) dirX = facingLeft ? -1 : 1;
 
-        if (fireRateTimer <= 0f) {
+        if (fireEnabled && fireRateTimer <= 0f) {
             shoot(dirX, dirY);
             fireRateTimer = fireCooldown;
+
             if (!moving) {
                 isAttacking = true;
                 stateTime = 0;
             }
+        }
+
+        if (iceEnabled && iceTimer <= 0f) {
+            Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
+            if (nearest != null) {
+                iceBalls.add(new IceBall(
+                    x + 32, y + 32,
+                    nearest.getX(), nearest.getY(),
+                    iceDamage
+                ));
+
+            }
+            iceTimer = iceCooldown;
         }
 
         // Actualiza animaciones
@@ -429,6 +455,10 @@ public class Wizard {
         hp += amount;
         if (hp > maxHP) hp = maxHP;
     }
+    public void increaseIceDamage(int amount) {
+        iceDamage += amount;
+    }
+
 
     /**
      * Activa regeneratin de HP con cegundos indicados
@@ -449,12 +479,20 @@ public class Wizard {
     public int getHP() { return hp; }
     public int getMaxHP() { return maxHP; }
     public ArrayList<Fireball> getFireballs() { return fireballs; }
+    public ArrayList<IceBall> getIceBalls() { return iceBalls; }
     public int getExp() { return exp; }
     public int getExpToNext() { return expToNext; }
     public boolean isDead() { return isDead; }
     public int getLevel() { return level; }
     public float getDamageMultiplier() { return damageMultiplier; }
     public float getSpeed() { return speed; }
+    public void enableFire()  { fireEnabled = true; }
+    public void disableFire() { fireEnabled = false; }
+    public void enableIce()   { iceEnabled = true; }
+    public void disableIce()  { iceEnabled = false; }
+    public boolean isFireEnabled() { return fireEnabled; }
+    public boolean isIceEnabled()  { return iceEnabled; }
+
 
     /**
      * Libera los recursos gráficos (texturas y ShapeRenderer).

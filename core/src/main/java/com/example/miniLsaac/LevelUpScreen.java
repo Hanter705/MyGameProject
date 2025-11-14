@@ -67,17 +67,17 @@ public class LevelUpScreen implements Screen {
 
         // === Mejora 3: Frecuencia de disparo ===
         upgrades.add(new Upgrade(
-            "Rate of Fire +15%",
+            "Rate of FireBall +15%",
             "Fireballs are released more frequently",
             () -> player.increaseFireRate(0.15f)
         ));
 
         // === Mejora 4: Regeneración de salud ===
-        upgrades.add(new Upgrade(
-            "Regeneration +1 HP/sec",
-            "Slowly regenerates health over time",
-            () -> player.enableRegen(2f)
-        ));
+        //        upgrades.add(new Upgrade(
+        //            "Regeneration +1 HP/sec",
+        //            "Slowly regenerates health over time",
+        //            () -> player.enableRegen(2f)
+        //        ));
 
 
     }

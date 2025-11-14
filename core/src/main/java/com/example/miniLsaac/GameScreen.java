@@ -181,6 +181,9 @@ public class GameScreen implements Screen {
                 return;
             }
 
+
+            for (IceBall ib : player.getIceBalls()) ib.update(delta);
+
             // Control del temporizador para nuevas oleadas
             spawnTimer += delta;
 
@@ -250,8 +253,34 @@ public class GameScreen implements Screen {
                 }
             }
 
+
+            // Colisiones de las iceBall con enemigos
+            for (int i = 0; i < player.getIceBalls().size(); i++) {
+                IceBall ib = player.getIceBalls().get(i);
+
+                for (Enemy enemy : enemies) {
+                    if (!enemy.isAlive()) continue;
+
+                    float dx = ib.getX() - enemy.getX();
+                    float dy = ib.getY() - enemy.getY();
+                    if (Math.sqrt(dx*dx + dy*dy) < 40) {
+
+                        enemy.takeDamage(ib.getDamage());
+                        ib.deactivate();
+
+                        if (!enemy.isAlive()) {
+                            enemiesKilled++;
+                            int expValue = Math.round(enemy.getExpDrop() * expMultiplier);
+                            expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), expValue));
+                        }
+                    }
+                }
+            }
+
+
             // Eliminar proyectiles y enemigos inactivos
             player.getFireballs().removeIf(f -> !f.isActive());
+            player.getIceBalls().removeIf(b -> !b.isActive());
             enemies.removeIf(e -> !e.isAlive());
 
             // Actualización y recolección de orbes de experiencia
@@ -317,6 +346,7 @@ public class GameScreen implements Screen {
         for (ExpOrb orb : expOrbs) orb.draw(batch);
         for (HealPotion hp : healPotions) hp.draw(batch);
         for (FloatingText text : floatingTexts) text.draw(batch);
+        for (IceBall ib : player.getIceBalls()) ib.draw(batch);
         batch.end();
 
         // Dibujo de barras de vida
@@ -416,6 +446,32 @@ public class GameScreen implements Screen {
         // La selección de enemigos se realiza a través de EnemyFactory.
         return EnemyFactory.create(x, y, playTime);
     }
+
+    public Enemy findNearestEnemy(float x, float y) {
+        Enemy best = null;
+        float bestDist = Float.MAX_VALUE;
+
+        for (Enemy e : enemies) {
+            if (!e.isAlive()) continue;
+
+            float dx = e.getX() - x;
+            float dy = e.getY() - y;
+            float dist = dx * dx + dy * dy; // быстрее чем sqrt
+
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = e;
+            }
+        }
+
+        return best;
+    }
+
+
+    public ArrayList<Enemy> getEnemies() {
+        return enemies;
+    }
+
 
 
     /**
