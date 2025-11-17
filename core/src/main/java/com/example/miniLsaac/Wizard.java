@@ -216,33 +216,30 @@ public class Wizard {
     public void update(float delta, ArrayList<Rectangle> walls) {
         stateTime += delta;
         iceTimer -= delta;
+        fireRateTimer -= delta;
         boolean moving = false;
         float newX = x, newY = y;
 
-        // Si el jugador está muriendo, solo actualiza la animación
+        // === смерть ===
         if (isDying) {
             deathTime += delta;
             currentFrame = deathAnim.getKeyFrame(deathTime);
-            if (deathAnim.isAnimationFinished(deathTime)) {
-                isDead = true;
-            }
+            if (deathAnim.isAnimationFinished(deathTime)) isDead = true;
             return;
         }
 
-        // Movimiento básico (WASD)
+        // === движение ===
         if (Gdx.input.isKeyPressed(Input.Keys.W)) { newY += speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) { newY -= speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) { newX -= speed * delta; facingLeft = true; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) { newX += speed * delta; facingLeft = false; moving = true; }
 
-        // Verifica colisiones antes de aplicar el movimiento
         if (!collides(newX, newY, walls)) {
             x = newX;
             y = newY;
         }
 
-        // Control de disparos
-        fireRateTimer -= delta;
+        // === направление для Fireball ===
         float dirX = 0, dirY = 0;
         if (Gdx.input.isKeyPressed(Input.Keys.W)) dirY = 1;
         if (Gdx.input.isKeyPressed(Input.Keys.S)) dirY = -1;
@@ -250,7 +247,8 @@ public class Wizard {
         if (Gdx.input.isKeyPressed(Input.Keys.D)) dirX = 1;
         if (dirX == 0 && dirY == 0) dirX = facingLeft ? -1 : 1;
 
-        if (fireEnabled && fireRateTimer <= 0f) {
+        // === стрельба (fire + ice) ===
+        if (fireRateTimer <= 0f) {
             shoot(dirX, dirY);
             fireRateTimer = fireCooldown;
 
@@ -260,20 +258,7 @@ public class Wizard {
             }
         }
 
-        if (iceEnabled && iceTimer <= 0f) {
-            Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
-            if (nearest != null) {
-                iceBalls.add(new IceBall(
-                    x + 32, y + 32,
-                    nearest.getX(), nearest.getY(),
-                    iceDamage
-                ));
-
-            }
-            iceTimer = iceCooldown;
-        }
-
-        // Actualiza animaciones
+        // === анимация ===
         if (isAttacking) {
             currentFrame = attackAnim.getKeyFrame(stateTime);
             if (attackAnim.isAnimationFinished(stateTime)) {
@@ -281,23 +266,29 @@ public class Wizard {
                 stateTime = 0;
             }
         } else {
-            currentFrame = moving ? flyAnim.getKeyFrames()[flyAnim.getKeyFrames().length - 1] : idleFrame;
+            currentFrame = moving ?
+                flyAnim.getKeyFrames()[flyAnim.getKeyFrames().length - 1] :
+                idleFrame;
         }
 
-        // Actualiza las bolas de fuego
+        // === обновление Fireball ===
         for (int i = 0; i < fireballs.size(); i++) {
             Fireball f = fireballs.get(i);
             f.update(delta);
-            if (!f.isActive()) {
-                fireballs.remove(i);
-                i--;
-            }
+            if (!f.isActive()) { fireballs.remove(i); i--; }
         }
 
-        // === Logica de regeneracion ===
+        // === обновление IceBall ===
+        for (int i = 0; i < iceBalls.size(); i++) {
+            IceBall ib = iceBalls.get(i);
+            ib.update(delta);
+            if (!ib.isActive()) { iceBalls.remove(i); i--; }
+        }
+
+        // === регенерация ===
         if (hasRegeneration && hp < maxHP) {
             regenTimer += delta;
-            if (regenTimer >= 1f) { // cada segundo
+            if (regenTimer >= 1f) {
                 hp += regenRate;
                 if (hp > maxHP) hp = maxHP;
                 regenTimer = 0f;
@@ -321,12 +312,33 @@ public class Wizard {
 
         if (dirX != 0) facingLeft = dirX < 0;
 
-        fireballs.add(new Fireball(
-            x + (facingLeft ? -10 : 80),
-            y + 35,
-            dirX, dirY, dmg
-        ));
+        // ==== FIREBALL ====
+        if (fireEnabled) {
+            fireballs.add(new Fireball(
+                x + (facingLeft ? -10 : 80),
+                y + 35,
+                dirX,
+                dirY,
+                dmg
+            ));
+        }
+
+        // ==== ICEBALL (автонаведение) ====
+        if (iceEnabled) {
+            Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
+            if (nearest != null) {
+                iceBalls.add(new IceBall(
+                    x + 32,
+                    y + 40,
+                    nearest.getX() + 16,
+                    nearest.getY() + 16,
+                    iceDamage
+                ));
+            }
+        }
     }
+
+
 
     /**
      * Dibuja el sprite del jugador y sus proyectiles.
