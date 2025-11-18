@@ -72,6 +72,23 @@ public class LevelUpScreen implements Screen {
             () -> player.increaseFireRate(0.15f)
         ));
 
+        upgrades.add(new Upgrade(
+            "❄ +15% Ice Damage",
+            "Increase damage +15%",
+            () -> player.increaseIceDamagePercent(0.15f)
+        ));
+        upgrades.add(new Upgrade(
+            "❄ -10% Ice Cooldown",
+            "Iceball are released more frequently ",
+            () -> player.reduceIceCooldown(0.10f)
+        ));
+
+        upgrades.add(new Upgrade(
+            "❄ +15% Ice Speed",
+            "increasing the speed of projectiles IceBall",
+            () -> player.increaseIceSpeed(0.15f)));
+
+
         // === Mejora 4: Regeneración de salud ===
         //        upgrades.add(new Upgrade(
         //            "Regeneration +1 HP/sec",

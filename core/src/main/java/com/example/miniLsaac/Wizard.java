@@ -51,12 +51,12 @@ public class Wizard {
     // === Disparo ===
 
     /** Tiempo entre disparos (en segundos). */
-    private float fireCooldown = 0.4f;
+    private float fireCooldown = 0.5f;
 
     /** Temporizador interno para controlar la cadencia de disparo. */
     private float fireRateTimer = 0f;
 
-    private float iceCooldown = 1.0f;
+    private float iceCooldown = 0.5f;
     private float iceTimer = 0f;
 
     private boolean fireEnabled =  false;  // включено по умолчанию
@@ -76,6 +76,8 @@ public class Wizard {
 
     /** Multiplicador del daño (aumenta con las mejoras). */
     private float damageMultiplier = 1f;
+    private float iceSpeedMultiplier = 1f;
+
 
 
     // === Experiencia y nivel ===
@@ -248,8 +250,8 @@ public class Wizard {
         if (dirX == 0 && dirY == 0) dirX = facingLeft ? -1 : 1;
 
         // === стрельба (fire + ice) ===
-        if (fireRateTimer <= 0f) {
-            shoot(dirX, dirY);
+        if (fireEnabled && fireRateTimer <= 0f) {
+            shootFireball(dirX, dirY);
             fireRateTimer = fireCooldown;
 
             if (!moving) {
@@ -257,6 +259,16 @@ public class Wizard {
                 stateTime = 0;
             }
         }
+        if (iceEnabled && iceTimer <= 0f) {
+            shootIceball();
+            iceTimer = iceCooldown;
+
+            if (!moving) {
+                isAttacking = true;
+                stateTime = 0;
+            }
+        }
+
 
         // === анимация ===
         if (isAttacking) {
@@ -302,40 +314,33 @@ public class Wizard {
      * @param dirX dirección horizontal.
      * @param dirY dirección vertical.
      */
-    private void shoot(float dirX, float dirY) {
-        float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+    private void shootFireball(float dirX, float dirY) {
+        float len = (float) Math.sqrt(dirX*dirX + dirY*dirY);
         int dmg = Math.round(baseDamage * damageMultiplier);
+
         if (len != 0) {
             dirX /= len;
             dirY /= len;
         }
 
-        if (dirX != 0) facingLeft = dirX < 0;
+        fireballs.add(new Fireball(
+            x + (facingLeft ? -10 : 80),
+            y + 35,
+            dirX, dirY,
+            dmg
+        ));
+    }
+    private void shootIceball() {
+        Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
+        if (nearest == null) return;
 
-        // ==== FIREBALL ====
-        if (fireEnabled) {
-            fireballs.add(new Fireball(
-                x + (facingLeft ? -10 : 80),
-                y + 35,
-                dirX,
-                dirY,
-                dmg
-            ));
-        }
-
-        // ==== ICEBALL (автонаведение) ====
-        if (iceEnabled) {
-            Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
-            if (nearest != null) {
-                iceBalls.add(new IceBall(
-                    x + 32,
-                    y + 40,
-                    nearest.getX() + 16,
-                    nearest.getY() + 16,
-                    iceDamage
-                ));
-            }
-        }
+        iceBalls.add(new IceBall(
+            x + 32, y + 40,
+            nearest.getX() + 16,
+            nearest.getY() + 16,
+            iceDamage,
+            iceSpeedMultiplier
+        ));
     }
 
 
@@ -467,9 +472,19 @@ public class Wizard {
         hp += amount;
         if (hp > maxHP) hp = maxHP;
     }
-    public void increaseIceDamage(int amount) {
-        iceDamage += amount;
+    public void increaseIceDamagePercent(float percent) {
+        iceDamage += iceDamage * percent;
     }
+
+    public void reduceIceCooldown(float percent) {
+        iceCooldown -= iceCooldown * percent;
+        if (iceCooldown < 0.2f) iceCooldown = 0.2f;
+    }
+
+    public void increaseIceSpeed(float percent) {
+        iceSpeedMultiplier += percent;
+    }
+
 
 
     /**

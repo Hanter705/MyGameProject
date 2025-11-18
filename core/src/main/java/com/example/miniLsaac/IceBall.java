@@ -9,11 +9,13 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 public class IceBall {
 
     private float x, y;
-    private float speed = 260f;  // чуть быстрее
+    private float speed = 150f;  // чуть быстрее
     private boolean active = true;
 
     private float dirX, dirY;
     private int damage;
+    private float speedMultiplier = 1f;
+
 
     private Animation<TextureRegion> anim;
     private float stateTime = 0f;
@@ -21,10 +23,13 @@ public class IceBall {
     private float angle = 0f; // угол поворота пули
     private TextureRegion lastFrame;   // последний кадр анимации
 
-    public IceBall(float startX, float startY, float targetX, float targetY, int dmg) {
+    public IceBall(float startX, float startY, float targetX, float targetY, int dmg, float speedMultiplier) {
         this.x = startX;
         this.y = startY;
         this.damage = dmg;
+        this.speedMultiplier = speedMultiplier;
+
+        speed = 260f * speedMultiplier;  // скорость зависит от улучшений
 
         // === Загружаем кадры анимации ===
         Texture[] frames = new Texture[]{
