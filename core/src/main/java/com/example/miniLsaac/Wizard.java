@@ -56,7 +56,7 @@ public class Wizard {
     /** Temporizador interno para controlar la cadencia de disparo. */
     private float fireRateTimer = 0f;
 
-    private float iceCooldown = 0.5f;
+    private float iceCooldown = 0.8f;
     private float iceTimer = 0f;
 
     private boolean fireEnabled =  false;  // включено по умолчанию
@@ -519,6 +519,7 @@ public class Wizard {
     public void disableIce()  { iceEnabled = false; }
     public boolean isFireEnabled() { return fireEnabled; }
     public boolean isIceEnabled()  { return iceEnabled; }
+
 
 
     /**

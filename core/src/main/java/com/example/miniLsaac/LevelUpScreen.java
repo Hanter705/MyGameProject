@@ -51,43 +51,47 @@ public class LevelUpScreen implements Screen {
         font = new BitmapFont();
         font.getData().setScale(2f);
 
-        // === Mejora 1: Daño aumentado ===
-        upgrades.add(new Upgrade(
-            "Increase damage +20%",
-            "Fireballs deal more damage",
-            () -> player.increaseDamage(0.2f)
-        ));
 
-        // === Mejora 2: Velocidad de movimiento ===
+        if (player.isFireEnabled()) {
+
+            // === Mejora 1: Daño aumentado ===
+            upgrades.add(new Upgrade(
+                "Increase damage +20%",
+                "Fireballs deal more damage",
+                () -> player.increaseDamage(0.2f)
+            ));
+
+            // === Mejora 3: Frecuencia de disparo ===
+            upgrades.add(new Upgrade(
+                "Rate of FireBall +15%",
+                "Fireballs are released more frequently",
+                () -> player.increaseFireRate(0.15f)
+            ));
+        }
+
+        if (player.isIceEnabled()) {
+
+            upgrades.add(new Upgrade(
+                "+15% Ice Damage",
+                "Increase damage +15%",
+                () -> player.increaseIceDamagePercent(0.15f)
+            ));
+            upgrades.add(new Upgrade(
+                "-10% Ice Cooldown",
+                "Iceball are released more frequently ",
+                () -> player.reduceIceCooldown(0.10f)
+            ));
+
+            upgrades.add(new Upgrade(
+                "+15% Ice Speed",
+                "increasing the speed of projectiles IceBall",
+                () -> player.increaseIceSpeed(0.15f)));
+        }
         upgrades.add(new Upgrade(
             "Increase speed +10%",
             "The character moves faster",
             () -> player.increaseSpeed(0.1f)
         ));
-
-        // === Mejora 3: Frecuencia de disparo ===
-        upgrades.add(new Upgrade(
-            "Rate of FireBall +15%",
-            "Fireballs are released more frequently",
-            () -> player.increaseFireRate(0.15f)
-        ));
-
-        upgrades.add(new Upgrade(
-            "❄ +15% Ice Damage",
-            "Increase damage +15%",
-            () -> player.increaseIceDamagePercent(0.15f)
-        ));
-        upgrades.add(new Upgrade(
-            "❄ -10% Ice Cooldown",
-            "Iceball are released more frequently ",
-            () -> player.reduceIceCooldown(0.10f)
-        ));
-
-        upgrades.add(new Upgrade(
-            "❄ +15% Ice Speed",
-            "increasing the speed of projectiles IceBall",
-            () -> player.increaseIceSpeed(0.15f)));
-
 
         // === Mejora 4: Regeneración de salud ===
         //        upgrades.add(new Upgrade(

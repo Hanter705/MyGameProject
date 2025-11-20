@@ -243,7 +243,7 @@ public class GameScreen implements Screen {
                             int expValue = Math.round(enemy.getExpDrop() * expMultiplier);
                             expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), expValue));
 
-                            if (Math.random() < 0.10) {
+                            if (Math.random() < 0.05) {
                                 healPotions.add(new HealPotion(enemy.getX(), enemy.getY()));
                             }
 
@@ -272,6 +272,10 @@ public class GameScreen implements Screen {
                             enemiesKilled++;
                             int expValue = Math.round(enemy.getExpDrop() * expMultiplier);
                             expOrbs.add(new ExpOrb(enemy.getX(), enemy.getY(), expValue));
+
+                            if (Math.random() < 0.05) {
+                                healPotions.add(new HealPotion(enemy.getX(), enemy.getY()));
+                            }
                         }
                     }
                 }

@@ -29,7 +29,7 @@ public class IceBall {
         this.damage = dmg;
         this.speedMultiplier = speedMultiplier;
 
-        speed = 260f * speedMultiplier;  // скорость зависит от улучшений
+        speed *= speedMultiplier;  // скорость зависит от улучшений
 
         // === Загружаем кадры анимации ===
         Texture[] frames = new Texture[]{
