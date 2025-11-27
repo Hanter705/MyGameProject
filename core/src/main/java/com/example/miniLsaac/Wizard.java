@@ -56,13 +56,17 @@ public class Wizard {
     /** Temporizador interno para controlar la cadencia de disparo. */
     private float fireRateTimer = 0f;
 
+    /** Enfriamiento del ataque de hielo. */
     private float iceCooldown = 0.8f;
+
+    /** Temporizador del ataque de hielo. */
     private float iceTimer = 0f;
 
-    private boolean fireEnabled =  false;  // включено по умолчанию
-    private boolean iceEnabled = true;  // выключено по умолчанию
+    /** Indica si el ataque de fuego está habilitado (true = habilitado). */
+    private boolean fireEnabled =  false;
 
-
+    /** Indica si el ataque de hielo está habilitado. */
+    private boolean iceEnabled = true;
 
     /** Límite mínimo del tiempo entre disparos. */
     private float minFireCooldown = 0.1f;
@@ -72,10 +76,14 @@ public class Wizard {
 
     /** Daño base de cada bola de fuego. */
     private int baseDamage = 20;
+
+    /** Daño base del proyectil de hielo. */
     private int iceDamage = 20;
 
     /** Multiplicador del daño (aumenta con las mejoras). */
     private float damageMultiplier = 1f;
+
+    /** Multiplicador de velocidad del proyectil de hielo. */
     private float iceSpeedMultiplier = 1f;
 
 
@@ -130,25 +138,28 @@ public class Wizard {
     /** Renderizador usado para dibujar la barra de salud. */
     private ShapeRenderer hpBar = new ShapeRenderer();
 
-    /** Para logica de generacion de HP */
-    // === regeneration ===
+    /** Lógica de regeneración de HP. */
     private boolean hasRegeneration = false;
-    private float regenRate = 1f;       // HP recupera en  1 cantidac por segundo
-    private float regenTimer = 0f;
 
+    /** Cantidad de HP recuperado por segundo. */
+    private float regenRate = 1f;
+
+    /** Temporizador interno de regeneración. */
+    private float regenTimer = 0f;
 
 
     // === Proyectiles ===
 
-    /** Lista de todas las bolas de fuego activas. */
+    /** Lista de bolas de fuego activas. */
     private ArrayList<Fireball> fireballs = new ArrayList<>();
-    private ArrayList<IceBall> iceBalls = new ArrayList<>();
 
+    /** Lista de proyectiles de hielo activos. */
+    private ArrayList<IceBall> iceBalls = new ArrayList<>();
 
 
     /**
      * Constructor del jugador.
-     * Inicializa las animaciones (vuelo, ataque y muerte) y define los valores iniciales.
+     * Inicializa las animaciones (vuelo, ataque y muerte).
      */
     public Wizard() {
         // Animación de vuelo
@@ -210,10 +221,17 @@ public class Wizard {
     }
 
     /**
-     * Actualiza el estado del jugador (movimiento, animaciones, disparo y colisiones).
+     * Actualiza el estado del jugador:
+     * <ul>
+     *     <li>Movimiento</li>
+     *     <li>Ataques (fuego y hielo)</li>
+     *     <li>Animaciones</li>
+     *     <li>Colisiones</li>
+     *     <li>Regeneración</li>
+     * </ul>
      *
      * @param delta tiempo transcurrido desde el último frame.
-     * @param walls lista de rectángulos que representan las paredes del mapa.
+     * @param walls lista de muros del escenario.
      */
     public void update(float delta, ArrayList<Rectangle> walls) {
         stateTime += delta;
@@ -222,7 +240,7 @@ public class Wizard {
         boolean moving = false;
         float newX = x, newY = y;
 
-        // === смерть ===
+        // === muerte ===
         if (isDying) {
             deathTime += delta;
             currentFrame = deathAnim.getKeyFrame(deathTime);
@@ -230,7 +248,7 @@ public class Wizard {
             return;
         }
 
-        // === движение ===
+        // === movimiento ===
         if (Gdx.input.isKeyPressed(Input.Keys.W)) { newY += speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) { newY -= speed * delta; moving = true; }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) { newX -= speed * delta; facingLeft = true; moving = true; }
@@ -241,7 +259,7 @@ public class Wizard {
             y = newY;
         }
 
-        // === направление для Fireball ===
+        // === dirección del Fireball ===
         float dirX = 0, dirY = 0;
         if (Gdx.input.isKeyPressed(Input.Keys.W)) dirY = 1;
         if (Gdx.input.isKeyPressed(Input.Keys.S)) dirY = -1;
@@ -249,7 +267,7 @@ public class Wizard {
         if (Gdx.input.isKeyPressed(Input.Keys.D)) dirX = 1;
         if (dirX == 0 && dirY == 0) dirX = facingLeft ? -1 : 1;
 
-        // === стрельба (fire + ice) ===
+        // === disparo (fuego + hielo) ===
         if (fireEnabled && fireRateTimer <= 0f) {
             shootFireball(dirX, dirY);
             fireRateTimer = fireCooldown;
@@ -259,6 +277,7 @@ public class Wizard {
                 stateTime = 0;
             }
         }
+
         if (iceEnabled && iceTimer <= 0f) {
             shootIceball();
             iceTimer = iceCooldown;
@@ -269,8 +288,7 @@ public class Wizard {
             }
         }
 
-
-        // === анимация ===
+        // === animación ===
         if (isAttacking) {
             currentFrame = attackAnim.getKeyFrame(stateTime);
             if (attackAnim.isAnimationFinished(stateTime)) {
@@ -283,21 +301,21 @@ public class Wizard {
                 idleFrame;
         }
 
-        // === обновление Fireball ===
+        // === actualización de Fireballs ===
         for (int i = 0; i < fireballs.size(); i++) {
             Fireball f = fireballs.get(i);
             f.update(delta);
             if (!f.isActive()) { fireballs.remove(i); i--; }
         }
 
-        // === обновление IceBall ===
+        // === actualización de IceBalls ===
         for (int i = 0; i < iceBalls.size(); i++) {
             IceBall ib = iceBalls.get(i);
             ib.update(delta);
             if (!ib.isActive()) { iceBalls.remove(i); i--; }
         }
 
-        // === регенерация ===
+        // === regeneración ===
         if (hasRegeneration && hp < maxHP) {
             regenTimer += delta;
             if (regenTimer >= 1f) {
@@ -330,6 +348,10 @@ public class Wizard {
             dmg
         ));
     }
+
+    /**
+     * Dispara un proyectil de hielo hacia el enemigo más cercano.
+     */
     private void shootIceball() {
         Enemy nearest = GameScreen.getInstance().findNearestEnemy(x, y);
         if (nearest == null) return;
@@ -342,8 +364,6 @@ public class Wizard {
             iceSpeedMultiplier
         ));
     }
-
-
 
     /**
      * Dibuja el sprite del jugador y sus proyectiles.
@@ -468,33 +488,47 @@ public class Wizard {
         fireCooldown -= fireCooldown * percent;
         if (fireCooldown < 0.1f) fireCooldown = 0.1f;
     }
+
+    /**
+     * Cura al jugador una cantidad específica.
+     *
+     * @param amount cantidad de HP restaurado.
+     */
     public void heal(int amount) {
         hp += amount;
         if (hp > maxHP) hp = maxHP;
     }
+
+    /**
+     * Incrementa el daño del hielo en porcentaje.
+     */
     public void increaseIceDamagePercent(float percent) {
         iceDamage += iceDamage * percent;
     }
 
+    /**
+     * Reduce el enfriamiento del ataque de hielo.
+     */
     public void reduceIceCooldown(float percent) {
         iceCooldown -= iceCooldown * percent;
         if (iceCooldown < 0.2f) iceCooldown = 0.2f;
     }
 
+    /**
+     * Aumenta la velocidad del proyectil de hielo.
+     */
     public void increaseIceSpeed(float percent) {
         iceSpeedMultiplier += percent;
     }
 
-
-
     /**
-     * Activa regeneratin de HP con cegundos indicados
-     * @param rate cantidad de HP por segundo.
+     * Activa la regeneración de HP con una cantidad por segundo.
+     *
+     * @param rate cantidad de HP recuperado por segundo.
      */
     public void enableRegen(float rate) {
         hasRegeneration = true;
-        regenRate += rate; // siempre suma la cantidad por segundo
-
+        regenRate += rate;
     }
 
     // === Getters ===
@@ -519,8 +553,6 @@ public class Wizard {
     public void disableIce()  { iceEnabled = false; }
     public boolean isFireEnabled() { return fireEnabled; }
     public boolean isIceEnabled()  { return iceEnabled; }
-
-
 
     /**
      * Libera los recursos gráficos (texturas y ShapeRenderer).

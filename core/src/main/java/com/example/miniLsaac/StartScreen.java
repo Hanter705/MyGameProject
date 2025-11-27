@@ -77,12 +77,12 @@ public class StartScreen implements Screen {
             font.setColor(Color.WHITE);
             font.draw(batch, "Enter your name:", centerX - 150, centerY + 30);
 
-            // Cursor que parpadea para dar efecto de escritura
+            // Cursor parpadeante para simular escritura
             String cursor = (System.currentTimeMillis() / 500 % 2 == 0) ? "_" : "";
             font.setColor(Color.CYAN);
             font.draw(batch, playerName.toString() + cursor, centerX - 150, centerY - 20);
         } else {
-            // === Fase 2: Mostrar el menú principal ===
+            // === Fase 2: Mostrar menú principal ===
             for (int i = 0; i < options.length; i++) {
                 if (i == selected)
                     font.setColor(Color.CYAN); // opción seleccionada
@@ -95,9 +95,9 @@ public class StartScreen implements Screen {
 
         batch.end();
 
-        // === ENTRADA DE NOMBRE ===
+        // === ENTRADA DEL NOMBRE ===
         if (!nameEntered) {
-            //  Entrada de letras (A-Z)
+            // Entrada de letras (A-Z)
             for (int key = Input.Keys.A; key <= Input.Keys.Z; key++) {
                 if (Gdx.input.isKeyJustPressed(key) && playerName.length() < 12) {
                     char c = (char) ('A' + (key - Input.Keys.A));
@@ -107,23 +107,23 @@ public class StartScreen implements Screen {
                 }
             }
 
-            //  Espacio
+            // Espacio
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && playerName.length() < 12) {
                 playerName.append(" ");
             }
 
-            //  Borrar último carácter
+            // Borrar último carácter
             if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE) && playerName.length() > 0) {
                 playerName.deleteCharAt(playerName.length() - 1);
             }
 
-            //  Confirmar nombre con ENTER
+            // Confirmar nombre con ENTER
             if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) && playerName.length() > 0) {
                 nameEntered = true;
                 Main.playerName = playerName.toString(); // guardamos el nombre globalmente
             }
 
-            return; // 🔹 No muestra el menú hasta que se ingrese el nombre
+            return; // 🔹 No mostrar el menú hasta que se ingrese el nombre
         }
 
         // === CONTROL DEL MENÚ ===
@@ -134,16 +134,16 @@ public class StartScreen implements Screen {
             selected = (selected + 1) % options.length;
         }
 
-        //  Confirmar opción seleccionada
+        // Confirmar opción seleccionada
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             if (selected == 0) {
                 // Iniciar el juego
                 Main.switchScreen(new GameScreen());
             } else if (selected == 1) {
-                // Tabla de liders
+                // Tabla de líderes
                 Main.switchScreen(new LeaderboardScreen());
-            }else if (selected == 2) {
-                // Salida
+            } else if (selected == 2) {
+                // Salir del juego
                 Gdx.app.exit();
             }
         }

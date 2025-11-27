@@ -47,7 +47,7 @@ public class ExpOrb {
 
         Texture[] frames = new Texture[4];
 
-        // 🎨 Selecciona el color del orbe según la cantidad de experiencia
+        //  Selecciona el color del orbe según la cantidad de experiencia
         String prefix;
         if (expValue <= 40) prefix = "coin/spr_coin_azu";        // Azul — poco EXP
         else if (expValue <= 140) prefix = "coin/spr_coin_gri";   // Gris — medio
@@ -55,7 +55,7 @@ public class ExpOrb {
         else if (expValue <= 500) prefix = "coin/spr_coin_berd"; // Verde — raro
         else prefix = "coin/spr_coin_roj";                       // Rojo — épico
 
-        // 🧩 Carga los 4 fotogramas de animación
+        //  Carga los 4 fotogramas de animación
         frames[0] = new Texture(Gdx.files.internal(prefix + "_1.png"));
         frames[1] = new Texture(Gdx.files.internal(prefix + "_2.png"));
         frames[2] = new Texture(Gdx.files.internal(prefix + "_3.png"));

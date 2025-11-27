@@ -21,7 +21,7 @@ import com.badlogic.gdx.Gdx;
  * <h3>Comportamiento:</h3>
  * <ul>
  *     <li>Persiguen la posición del jugador.</li>
- *     <li>Evitan superponerse con otros enemigos (mediante una fuerza de repulsión).</li>
+ *     <li>Evitan superponerse con otros enemigos mediante una fuerza de repulsión.</li>
  *     <li>Mueren al recibir suficiente daño.</li>
  * </ul>
  */
@@ -31,12 +31,13 @@ public class Enemy {
     protected Texture[] flyTextures;
 
     /** Animación que controla los fotogramas de vuelo del enemigo. */
-    protected  Animation<TextureRegion> flyAnim;
+    protected Animation<TextureRegion> flyAnim;
+
+    /** Indica si el enemigo debe ser dibujado mirando hacia la izquierda. */
     protected boolean facingLeft = false;
 
-
     /** Fotograma actual mostrado en pantalla. */
-    protected  TextureRegion currentFrame;
+    protected TextureRegion currentFrame;
 
     /** Tiempo acumulado usado para avanzar la animación. */
     protected float stateTime;
@@ -45,10 +46,10 @@ public class Enemy {
     protected boolean alive = true;
 
     /** Posición X del enemigo. */
-    protected  float x;
+    protected float x;
 
     /** Posición Y del enemigo. */
-    protected  float y;
+    protected float y;
 
     /** Velocidad de movimiento del enemigo. */
     protected float speed = 55f;
@@ -59,12 +60,13 @@ public class Enemy {
     /** Vida actual del enemigo. */
     protected int hp = maxHP;
 
-    /** Daño y experiencia base (para heredar en subclases). */
-    protected int damage = 18;   // daño que causa al jugador
-    protected int expDrop = 90;  // experiencia que da al morir
+    /** Daño que inflige al jugador. */
+    protected int damage = 18;
 
+    /** Cantidad de experiencia que otorga al morir. */
+    protected int expDrop = 90;
 
-    /** Objeto encargado de dibujar la barra de salud. */
+    /** Objeto encargado de dibujar la barra de salud del enemigo. */
     protected ShapeRenderer hpBar;
 
     /**
@@ -94,15 +96,15 @@ public class Enemy {
     /**
      * Actualiza el comportamiento del enemigo.
      * <ul>
-     *     <li>Se mueve hacia el jugador.</li>
-     *     <li>Evita colisiones con otros enemigos cercanos.</li>
+     *     <li>Persigue al jugador calculando la dirección hacia él.</li>
+     *     <li>Se separa de otros enemigos aplicando una fuerza de repulsión.</li>
      *     <li>Actualiza la animación de vuelo.</li>
      * </ul>
      *
-     * @param delta tiempo transcurrido desde el último frame (en segundos).
-     * @param playerX posición actual del jugador en el eje X.
-     * @param playerY posición actual del jugador en el eje Y.
-     * @param allEnemies lista de todos los enemigos (para manejar la separación entre ellos).
+     * @param delta tiempo transcurrido desde el último frame.
+     * @param playerX posición X del jugador.
+     * @param playerY posición Y del jugador.
+     * @param allEnemies lista de todos los enemigos en pantalla.
      */
     public void update(float delta, float playerX, float playerY, ArrayList<Enemy> allEnemies) {
         stateTime += delta;
@@ -118,7 +120,7 @@ public class Enemy {
             y += (dy / distanceToPlayer) * speed * delta;
         }
 
-        // --- Evita superposición entre enemigos ---
+        // --- Evitar superposición entre enemigos ---
         float repelForce = 80f;
         float minDistance = 40f;
 
@@ -138,14 +140,17 @@ public class Enemy {
             }
         }
 
+        // Determinar si el enemigo debe mirar hacia la izquierda
         facingLeft = (playerX < x);
-
     }
 
     /**
-     * Dibuja el enemigo en la pantalla.
+     * Dibuja el enemigo en pantalla con la animación correspondiente.
+     * <p>
+     * Si el enemigo se mueve hacia la izquierda, se invierte el fotograma actual.
+     * </p>
      *
-     * @param batch el {@link SpriteBatch} usado para renderizar el sprite.
+     * @param batch el SpriteBatch usado para dibujar.
      */
     public void draw(SpriteBatch batch) {
 
@@ -156,10 +161,10 @@ public class Enemy {
 
         currentFrame = flyAnim.getKeyFrame(stateTime, true);
 
-        // создаём копию, чтобы не портить оригинальный кадр
+        // crear copia del fotograma (para no modificar el original)
         TextureRegion frame = new TextureRegion(currentFrame);
 
-        // если смотрит влево — флип по X
+        // invertir horizontalmente si mira hacia la izquierda
         if (facingLeft && !frame.isFlipX()) {
             frame.flip(true, false);
         } else if (!facingLeft && frame.isFlipX()) {
@@ -169,11 +174,10 @@ public class Enemy {
         batch.draw(frame, x, y, 64, 64);
     }
 
-
     /**
      * Dibuja la barra de salud del enemigo sobre su sprite.
      *
-     * @param camera la cámara ortográfica actual usada para ajustar las coordenadas.
+     * @param camera cámara ortográfica que controla la vista.
      */
     public void drawHP(OrthographicCamera camera) {
         hpBar.setProjectionMatrix(camera.combined);
@@ -195,16 +199,16 @@ public class Enemy {
     }
 
     /**
-     * Indica si el enemigo sigue vivo.
+     * Indica si el enemigo está vivo.
      *
-     * @return {@code true} si el enemigo está vivo, {@code false} si ha muerto.
+     * @return true si el enemigo tiene vida, false si ha muerto.
      */
     public boolean isAlive() {
         return alive;
     }
 
     /**
-     * Aplica daño al enemigo y lo marca como muerto si su vida llega a 0.
+     * Aplica daño al enemigo y lo marca como muerto si su HP llega a 0.
      *
      * @param dmg cantidad de daño recibido.
      */
@@ -215,6 +219,11 @@ public class Enemy {
             alive = false;
         }
     }
+
+    /**
+     * Carga la animación de vuelo usando las texturas del enemigo.
+     * (Usado por clases hijas que cambian las texturas).
+     */
     protected void loadAnimation() {
         TextureRegion[] frames = new TextureRegion[flyTextures.length];
         for (int i = 0; i < flyTextures.length; i++) {
@@ -225,34 +234,23 @@ public class Enemy {
     }
 
     /**
-     * Libera los recursos gráficos (texturas y ShapeRenderer).
-     * Debe llamarse al eliminar al enemigo o cerrar el juego.
+     * Libera los recursos de este enemigo (texturas y barra de vida).
      */
     public void dispose() {
         for (Texture t : flyTextures) t.dispose();
         hpBar.dispose();
     }
 
-    public int getExpDrop() {
-        return expDrop;
-    }
-    public int getDamage() {
-        return damage;
-    }
+    /** @return experiencia que otorga este enemigo. */
+    public int getExpDrop() { return expDrop; }
 
+    /** @return daño que causa al jugador. */
+    public int getDamage() { return damage; }
 
-
-    /**
-     * Devuelve la posición X del enemigo.
-     *
-     * @return coordenada X.
-     */
+    /** @return posición X del enemigo. */
     public float getX() { return x; }
 
-    /**
-     * Devuelve la posición Y del enemigo.
-     *
-     * @return coordenada Y.
-     */
+    /** @return posición Y del enemigo. */
     public float getY() { return y; }
 }
+
